@@ -1,4 +1,4 @@
-# config_list_gpt4 = ["gpt-4o-mini"]
+# config_list_gpt4 = ["gpt-3.5-turbo"]
 
 # gpt4_config = {
 #     "seed": 42,  # change the seed for different trials
