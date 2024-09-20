@@ -107,3 +107,92 @@ VALUES
 	'Brown solid low-rise regular shorts, has four pockets, a button closure',
 	'Pink'
 );
+
+-- Query for customer
+CREATE TABLE Customers (
+	CustomerID INT PRIMARY KEY,
+	FirstName TEXT,
+	LastName TEXT,
+	Email TEXT,
+	PhoneNumber TEXT,
+	ShippingAddress TEXT
+);
+
+INSERT INTO
+	Customers (
+		CustomerID,
+		FirstName,
+		LastName,
+		Email,
+		PhoneNumber,
+		ShippingAddress
+	)
+VALUES
+	(
+		1,
+		'John',
+		'Doe',
+		'john.doe@example.com',
+		'555-1234',
+		'123 Elm Street'
+	),
+	(
+		2,
+		'Jane',
+		'Smith',
+		'jane.smith@example.com',
+		'555-5678',
+		'456 Oak Avenue'
+	);
+
+-- Queries for order status
+CREATE TABLE Orders (
+	OrderID INT PRIMARY KEY,
+	CustomerID INT,
+	ProductID INT,
+	OrderDate DATE,
+	Quantity INT,
+	TotalPrice INT,
+	OrderStatus TEXT,
+	FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID),
+	FOREIGN KEY (ProductID) REFERENCES Products(ProductID)
+);
+
+INSERT INTO
+	Orders (
+		OrderID,
+		CustomerID,
+		ProductID,
+		OrderDate,
+		Quantity,
+		TotalPrice,
+		OrderStatus
+	)
+VALUES
+	(
+		1001,
+		1,
+		10017413,
+		'2024-09-10',
+		1,
+		100,
+		'Shipped'
+	),
+	(
+		1002,
+		2,
+		10016283,
+		'2024-09-11',
+		2,
+		300,
+		'Delivered'
+	),
+	(
+		1003,
+		1,
+		10016283,
+		'2024-09-12',
+		1,
+		150,
+		'Processing'
+	);
