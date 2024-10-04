@@ -114,3 +114,50 @@ class PostgresManager:
         for table_name in table_names:
             definitions.append(self.get_table_definition(table_name))
         return "\n\n".join(definitions)
+
+    ## IMP: Below functions are required to be reviewed and updated
+    #
+    def save_customer(
+        self, firstname, lastname, email, phonenumber, shippingaddress, creditcardnumber
+    ):
+        customer_data = {
+            "firstname": firstname,
+            "lastname": lastname,
+            "email": email,
+            "phonenumber": phonenumber,
+            "shippingaddress": shippingaddress,
+            "creditcardnumber": creditcardnumber,
+        }
+        self.upsert("customers", customer_data)
+        # Assuming the customer table has an auto-incrementing id
+        return self.get(
+            "customers", email
+        )  # Retrieve the customer ID by email or a unique identifier
+
+    def create_order(
+        self, customer_id, product_id, order_date, quantity, total_price, order_status
+    ):
+        order_data = {
+            "customerid": customer_id,
+            "productid": product_id,
+            "orderdate": order_date,
+            "quantity": quantity,
+            "totalprice": total_price,
+            "orderstatus": order_status,
+        }
+        self.upsert("orders", order_data)
+        # Assuming the order table has an auto-incrementing id
+        return self.get(
+            "orders", customer_id
+        )  # Retrieve the order ID based on customer ID or other logic
+
+    # def get_product_id(self, product_name):
+    #     """
+    #     Retrieve the product ID from the 'products' table based on the product name.
+    #     """
+    #     select_product_stmt = """
+    #     SELECT id FROM products WHERE product_name = %s;
+    #     """
+    #     self.cur.execute(select_product_stmt, (product_name,))
+    #     result = self.cur.fetchone()
+    #     return result[0] if result else None

@@ -4,6 +4,7 @@ from postgres_da_ai_agent.modules import llm
 import dotenv
 import argparse
 import autogen
+import datetime
 
 dotenv.load_dotenv()
 
@@ -16,6 +17,7 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 POSTGRES_TABLE_DEFINITIONS_CAP_REF = "TABLE_DEFINITIONS"
 RESPONSE_FORMAT_CAP_REF = "RESPONSE_FORMAT"
 SQL_DELIMITER = "---------"
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -75,15 +77,12 @@ def main():
             return have_content and "APPROVED" in content["content"]
 
         # Prompts for each agent
-        USER_PROXY_PROMPT = (
-            "You are the user proxy agent. Based on the user's request, route the task to the appropriate agent (either Product Recommendation Agent or Order Status Agent)."
-        )
+        USER_PROXY_PROMPT = "You are the user proxy agent. Based on the user's request, route the task to the appropriate agent (either Product Recommendation Agent or Order Status Agent)."
         PRODUCT_RECOMMENDATION_PROMPT = (
-            "You are the Product Recommendation Agent. Your task is to analyze the user's preferences and provide product recommendations based on the available data in the database."
+            "You are the Product Recommendation Agent. Your task is to analyze the user's preferences and provide product recommendations based on the available data in the database,"
+            "handle order processing if the user chooses to purchase the product."
         )
-        ORDER_STATUS_PROMPT = (
-            "You are the Order Status Agent. Your task is to retrieve and provide the order status based on the user's request and available data in the database."
-        )
+        ORDER_STATUS_PROMPT = "You are the Order Status Agent. Your task is to retrieve and provide the order status based on the user's request and available data in the database."
 
         # Create the agents
         user_proxy = autogen.UserProxyAgent(
@@ -99,7 +98,7 @@ def main():
             llm_config=gpt4_config,
             system_message=PRODUCT_RECOMMENDATION_PROMPT,
             code_execution_config=False,
-            human_input_mode="NEVER",
+            human_input_mode="WHEN_CALLED",
             is_termination_msg=is_termination_msg,
             function_map=function_map,
         )
@@ -126,15 +125,100 @@ def main():
         # Routing logic for the user proxy agent
         def route_request(prompt_text):
             if "recommend" in prompt_text.lower():
+                print(prompt_text + " - Routing to Product Recommendation Agent")
                 user_proxy.forward_request_to(product_recommendation)
             elif "order status" in prompt_text.lower():
                 user_proxy.forward_request_to(order_status)
             else:
                 print("No matching agent found for the request.")
 
+        # Handle Purchase confirmation flow
+
+        def handle_purchase_and_payment_flow(manager, db, first_recommended_product):
+            purchase_confirmation = input("Do you want to buy this product? (yes/no): ")
+            if purchase_confirmation.lower() == "yes":
+                # collect user information
+                firstname = input("Enter your first name: ")
+                lastname = input("Enter your last name: ")
+                email = input("Enter your email: ")
+                phonenumber = input("Enter your phone number: ")
+                shippingaddress = input("Enter your shipping address: ")
+                creditcardnumber = input("Enter your credit card number: ")
+
+                # save customer information into customer table
+                customer_id = db.save_customer(
+                    firstname,
+                    lastname,
+                    email,
+                    phonenumber,
+                    shippingaddress,
+                    creditcardnumber,
+                )
+
+                quantity = 1  # Assuming the quantity is 1 for simplicity
+                order_date = (
+                    datetime.date.today()
+                )  # Assuming today's date for the order date
+                total_price = first_recommended_product[
+                    "price"
+                ]  # Assuming the price is fetched from the recommended product
+
+                order_id = db.create_order(
+                    customer_id=customer_id,
+                    product_id=first_recommended_product["productid"],
+                    order_date=order_date,
+                    quantity=quantity,
+                    total_price=total_price,
+                    order_status="Pending",  # Set the initial status to 'Pending'
+                )
+
+                print(f"Order placed successfully! Your order ID is {order_id}.")
+
+            else:
+                print("Purchase cancelled.")
+
         # Initiate chat with routing
         user_proxy.initiate_chat(manager, clear_history=True, message=prompt)
         route_request(args.prompt)
+
+        # After recommendation prompt for purchase
+        product_recommendation_response = manager.get_response_from_agent(
+            product_recommendation
+        )
+
+        if product_recommendation_response:
+            recommended_products = llm.safe_get(
+                product_recommendation_response, "choices.0.message.content"
+            )
+
+            if recommended_products:
+                first_recommended_product = recommended_products[0]
+
+                # extract required information from the product recommendation
+                product_id = first_recommended_product.get("productid")
+                product_name = first_recommended_product.get("productname")
+
+                import json
+
+                print(json.dumps(first_recommended_product, indent=4))
+
+                # handle purchase confirmation
+                handle_purchase_and_payment_flow(manager, db, first_recommended_product)
+            else:
+                print(
+                    json.dumps({"message": "No product recommendation found"}, indent=4)
+                )
+        else:
+            print(
+                json.dumps(
+                    {"message": "No response from Product Recommendation Agent"},
+                    indent=4,
+                )
+            )
+
+        # print(product_recommendation_response)
+        purchase_confirmation = input("Do you want to buy this product? (yes/no): ")
+        # handle_purchase_and_payment_flow(purchase_confirmation)
 
 
 if __name__ == "__main__":

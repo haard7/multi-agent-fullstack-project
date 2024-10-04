@@ -215,9 +215,21 @@ VALUES
 		150,
 		'Processing'
 	);
-	
+
 	select * from customers;
 	select * from orders;
 	select * from products;
-	
 
+---- Changes after creating the table as above ---------------------------
+	ALTER TABLE Customers
+ADD COLUMN CreditCardNumber TEXT;
+
+UPDATE Customers
+SET CreditCardNumber = '1234567812345678'
+WHERE CustomerID = 1;
+
+UPDATE Customers
+SET CreditCardNumber = '8765432187654321'
+WHERE CustomerID = 2;
+
+SELECT * FROM Customers;
