@@ -6,6 +6,7 @@
 - it should be able to write the data into the database if user wants to purchase the recommended product
 - you can run either main-copy.py or main.py. I am currently modifying main-copy.py for some results.
 - First create the database using "ClothShop.sql" file in PostgreSQL. I have updated the schema in the next queries so please consider that in mind before running our code, As it is working with latest schema.
+- Order stautus agent working perfectly. run `python -m postgres_da_ai_agent.main --prompt "give the order status of my order with ordeid 1003"`
 
 ## How to Run
 
@@ -24,6 +25,9 @@
 
 6. run using below command
    `python -m postgres_da_ai_agent.main --prompt "get all the products for gender Men"`
+
+   or
+
    `python -m postgres_da_ai_agent.main-copy --prompt "get all the products for gender Men"`
 
    I have main-copy.py file to playaround which should not affect minimum viable execution I have in main. but you can
