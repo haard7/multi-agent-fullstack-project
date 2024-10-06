@@ -63,27 +63,120 @@ def main():
                         },
                         "required": ["sql"],
                     },
-                }
+                },
+                {
+                    "name": "save_customer",
+                    "description": "Save customer information to the database",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "firstname": {"type": "string"},
+                            "lastname": {"type": "string"},
+                            "email": {"type": "string"},
+                            "phonenumber": {"type": "string"},
+                            "shippingaddress": {"type": "string"},
+                            "creditcardnumber": {"type": "string"},
+                        },
+                        "required": [
+                            "firstname",
+                            "lastname",
+                            "email",
+                            "phonenumber",
+                            "shippingaddress",
+                            "creditcardnumber",
+                        ],
+                    },
+                },
+                {
+                    "name": "create_order",
+                    "description": "Create a new order in the database",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "customer_id": {"type": "integer"},
+                            "product_id": {"type": "integer"},
+                            "order_date": {"type": "string"},
+                            "quantity": {"type": "integer"},
+                            "total_price": {"type": "number"},
+                            "order_status": {"type": "string"},
+                        },
+                        "required": [
+                            "customer_id",
+                            "product_id",
+                            "order_date",
+                            "quantity",
+                            "total_price",
+                            "order_status",
+                        ],
+                    },
+                },
             ],
         }
 
         # SQL function map
         function_map = {
             "run_sql": db.run_sql,
+            "save_customer": db.save_customer,
+            "create_order": db.create_order,
         }
 
         # Termination message function
+        # def is_termination_msg(content):
+        #     have_content = content.get("content", None) is not None
+        #     return have_content and "APPROVED" in content["content"]
+
         def is_termination_msg(content):
-            have_content = content.get("content", None) is not None
-            return have_content and "APPROVED" in content["content"]
+            if not content.get("content"):
+                return False
+
+            message = content["content"].lower().strip()
+
+            termination_phrases = [
+                "terminate",
+                "end conversation",
+                "finish",
+                "goodbye",
+                "thank you, that's all",
+                "exit",
+                "quit",
+                "done",
+                "that's all i need",
+            ]
+
+            if any(phrase in message for phrase in termination_phrases):
+                return True
+
+            if "order confirmed" in message or "order completed" in message:
+                return True
+
+            if "no, i don't want to purchase" in message:
+                return True
+            return False
 
         # Prompts for each agent
-        USER_PROXY_PROMPT = "You are the user proxy agent. Based on the user's request, route the task to the appropriate agent (either Product Recommendation Agent or Order Status Agent)."
-        PRODUCT_RECOMMENDATION_PROMPT = (
-            # "You are the Product Recommendation Agent. Your task is to analyze the user's preferences and provide a single product recommendation based on the available data in the database, if there are multiple products eligible for recommendation then only return the first product,"
-            # "handle order processing if the user chooses to purchase the product."
-            "You are the Product Recommendation Agent. Your task is to analyze the user's preferences and provide a single product recommendation based on the available data in the database. After providing the recommendation, include a message asking if the user would like to purchase the product. is user says yes to buy the product then collect user information and save it in the database."
-        )
+        # old promtp for user proxy: "You are the user proxy agent. Based on the user's request, route the task to the appropriate agent (either Product Recommendation Agent or Order Status Agent)."
+        USER_PROXY_PROMPT = """ You are the user proxy agent. Your task is to:
+1. Analyze the initial user request.
+2. If the request is about product recommendations or purchases, route it to the Product Recommendation Agent.
+3. If the request is about order status, route it to the Order Status Agent.
+4. After the initial routing, continue to facilitate communication between the user and the chosen agent until termination conditions are met.
+5. Do not switch between agents once an initial route is chosen unless explicitly instructed by the user.
+"""
+        PRODUCT_RECOMMENDATION_PROMPT = """
+        You are the Product Recommendation Agent. Your task is to:
+        1. Analyze the user's preferences and provide a single product recommendation based on the available data in the database.
+        2. After providing the recommendation, ask if the user would like to purchase the product.
+        3. If the user agrees to purchase, gather the following information:
+           - First name
+           - Last name
+           - Email
+           - Phone number
+           - Shipping address
+           - Credit card number
+        4. Use the save_customer function to save the customer information.
+        5. Use the create_order function to create a new order with status "processing".
+        6. Provide a summary of the order to the user.
+        """
         ORDER_STATUS_PROMPT = "You are the Order Status Agent. Your task is to retrieve and provide the order status based on the user's request and available data in the database."
 
         # Create the agents
@@ -92,6 +185,8 @@ def main():
             system_message=USER_PROXY_PROMPT,
             code_execution_config=False,
             human_input_mode="ALWAYS",
+            # is_termination_msg=lambda x: x.get("content", "")
+            # and x.get("content", "").rstrip().endswith("TERMINATE"),
             is_termination_msg=is_termination_msg,
         )
 
@@ -101,7 +196,7 @@ def main():
             system_message=PRODUCT_RECOMMENDATION_PROMPT,
             code_execution_config=False,
             human_input_mode="NEVER",
-            is_termination_msg=is_termination_msg,
+            # is_termination_msg=is_termination_msg,
             function_map=function_map,
         )
 
@@ -119,58 +214,23 @@ def main():
         groupchat = autogen.GroupChat(
             agents=[user_proxy, product_recommendation, order_status],
             messages=[],
-            max_round=10,
+            max_round=15,
         )
 
-        manager = autogen.GroupChatManager(groupchat=groupchat, llm_config=gpt4_config)
+        manager = autogen.GroupChatManager(
+            groupchat=groupchat,
+            llm_config=gpt4_config,
+            system_message="""
+    You are the group chat manager. Your role is to:
+    1. Ensure that the conversation stays on track with the initially chosen agent (Product Recommendation or Order Status).
+    2. Only allow switching between agents if the user explicitly requests it.
+    3. Terminate the conversation when appropriate termination conditions are met.
+    """,
+        )
 
-        # def handle_purchase_and_payment_flow(manager, db, first_recommended_product):
-        #     purchase_confirmation = input("Do you want to buy this product? (yes/no): ")
-        #     if purchase_confirmation.lower() == "yes":
-        #         # collect user information
-        #         firstname = input("Enter your first name: ")
-        #         lastname = input("Enter your last name: ")
-        #         email = input("Enter your email: ")
-        #         phonenumber = input("Enter your phone number: ")
-        #         shippingaddress = input("Enter your shipping address: ")
-        #         creditcardnumber = input("Enter your credit card number: ")
-
-        #         # save customer information into customer table
-        #         customer_id = db.save_customer(
-        #             firstname,
-        #             lastname,
-        #             email,
-        #             phonenumber,
-        #             shippingaddress,
-        #             creditcardnumber,
-        #         )
-
-        #         quantity = 1  # Assuming the quantity is 1 for simplicity
-        #         order_date = (
-        #             datetime.date.today()
-        #         )  # Assuming today's date for the order date
-        #         total_price = first_recommended_product[
-        #             "price"
-        #         ]  # Assuming the price is fetched from the recommended product
-
-        #         order_id = db.create_order(
-        #             customer_id=customer_id,
-        #             product_id=first_recommended_product["productid"],
-        #             order_date=order_date,
-        #             quantity=quantity,
-        #             total_price=total_price,
-        #             order_status="Pending",  # Set the initial status to 'Pending'
-        #         )
-
-        #         print(f"Order placed successfully! Your order ID is {order_id}.")
-
-        #     else:
-        #         print("Purchase cancelled.")
-
-        # Initiate chat with routing
         user_proxy.initiate_chat(manager, clear_history=True, message=prompt)
-        
 
+        # print("user proxy done interacting with product recommendation agents")
 
 
 if __name__ == "__main__":

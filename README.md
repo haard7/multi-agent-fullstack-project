@@ -30,7 +30,8 @@
 
    `python -m postgres_da_ai_agent.main-copy --prompt "get all the products for gender Men"`
 
-   I have main-copy.py file to playaround which should not affect minimum viable execution I have in main. but you can
+   I have main-copy.py file to playaround which should not affect minimum viable execution I have in main.py
+   currently main-copy.py have improved code which is executable - 6:31 PM 10/06/2024
 
 ## Next steps
 
