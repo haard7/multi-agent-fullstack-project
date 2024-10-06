@@ -129,7 +129,7 @@ class PostgresManager:
             "creditcardnumber": creditcardnumber,
         }
         self.upsert("customers", customer_data)
-        # Assuming the customer table has an auto-incrementing id
+        # Make sure customer have autoincreamenting ids
         return self.get(
             "customers", email
         )  # Retrieve the customer ID by email or a unique identifier
@@ -146,7 +146,7 @@ class PostgresManager:
             "orderstatus": order_status,
         }
         self.upsert("orders", order_data)
-        # Assuming the order table has an auto-incrementing id
+        # Make sure customer have auto-incrementing id
         return self.get(
             "orders", customer_id
         )  # Retrieve the order ID based on customer ID or other logic

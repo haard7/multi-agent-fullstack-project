@@ -5,6 +5,7 @@ import dotenv
 import argparse
 import autogen
 import datetime
+from autogen import Agent
 
 dotenv.load_dotenv()
 
@@ -79,8 +80,9 @@ def main():
         # Prompts for each agent
         USER_PROXY_PROMPT = "You are the user proxy agent. Based on the user's request, route the task to the appropriate agent (either Product Recommendation Agent or Order Status Agent)."
         PRODUCT_RECOMMENDATION_PROMPT = (
-            "You are the Product Recommendation Agent. Your task is to analyze the user's preferences and provide product recommendations based on the available data in the database,"
-            "handle order processing if the user chooses to purchase the product."
+            # "You are the Product Recommendation Agent. Your task is to analyze the user's preferences and provide a single product recommendation based on the available data in the database, if there are multiple products eligible for recommendation then only return the first product,"
+            # "handle order processing if the user chooses to purchase the product."
+            "You are the Product Recommendation Agent. Your task is to analyze the user's preferences and provide a single product recommendation based on the available data in the database. After providing the recommendation, include a message asking if the user would like to purchase the product. if user says yes to buy the product then collect user information and save it in the database in its appropriate place. also save the order informaiton in the database."
         )
         ORDER_STATUS_PROMPT = "You are the Order Status Agent. Your task is to retrieve and provide the order status based on the user's request and available data in the database."
 
@@ -89,7 +91,7 @@ def main():
             name="User_Proxy",
             system_message=USER_PROXY_PROMPT,
             code_execution_config=False,
-            human_input_mode="NEVER",
+            human_input_mode="ALWAYS",
             is_termination_msg=is_termination_msg,
         )
 
@@ -98,7 +100,7 @@ def main():
             llm_config=gpt4_config,
             system_message=PRODUCT_RECOMMENDATION_PROMPT,
             code_execution_config=False,
-            human_input_mode="WHEN_CALLED",
+            human_input_mode="NEVER",
             is_termination_msg=is_termination_msg,
             function_map=function_map,
         )
@@ -118,21 +120,33 @@ def main():
             agents=[user_proxy, product_recommendation, order_status],
             messages=[],
             max_round=10,
+            # speaker_selection_method = custom_speaker_selection_method,
         )
 
         manager = autogen.GroupChatManager(groupchat=groupchat, llm_config=gpt4_config)
 
         # Routing logic for the user proxy agent
-        def route_request(prompt_text):
-            if "recommend" in prompt_text.lower():
-                print(prompt_text + " - Routing to Product Recommendation Agent")
-                user_proxy.forward_request_to(product_recommendation)
-            elif "order status" in prompt_text.lower():
-                user_proxy.forward_request_to(order_status)
-            else:
-                print("No matching agent found for the request.")
+        # old routing logic
+        #   def route_request(prompt_text):
+        #     if "recommend" in prompt_text.lower():
+        #         print(prompt_text + " - Routing to Product Recommendation Agent")
+        #         user_proxy.forward_request_to(product_recommendation)
+        #     elif "order status" in prompt_text.lower():
+        #         user_proxy.forward_request_to(order_status)
+        #     else:
+        #         print("No matching agent found for the request.")
 
         # Handle Purchase confirmation flow
+
+        # def custom_speaker_selection_method(
+        #     last_speaker: Agent, groupchat: autogen.GroupChat
+        # ):
+        #     if last_speaker is user_proxy:
+        #         return product_recommendation
+
+        def get_response_from_agent(manager, agent):
+            print("Haard: it is calling me")
+            # I want to get the last response from the agent for further processing
 
         def handle_purchase_and_payment_flow(manager, db, first_recommended_product):
             purchase_confirmation = input("Do you want to buy this product? (yes/no): ")
@@ -179,11 +193,18 @@ def main():
 
         # Initiate chat with routing
         user_proxy.initiate_chat(manager, clear_history=True, message=prompt)
-        route_request(args.prompt)
+        # route_request(args.prompt)
+
+        # route_request(args.prompt, manager, groupchat)
 
         # After recommendation prompt for purchase
-        product_recommendation_response = manager.get_response_from_agent(
-            product_recommendation
+
+        # product_recommendation_response = manager.get_response_from_agent(
+        #     product_recommendation
+        # )
+
+        product_recommendation_response = get_response_from_agent(
+            manager, product_recommendation
         )
 
         if product_recommendation_response:
@@ -217,7 +238,7 @@ def main():
             )
 
         # print(product_recommendation_response)
-        purchase_confirmation = input("Do you want to buy this product? (yes/no): ")
+        # purchase_confirmation = input("Do you want to buy this product? (yes/no): ")
         # handle_purchase_and_payment_flow(purchase_confirmation)
 
 

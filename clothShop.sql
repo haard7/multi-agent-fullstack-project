@@ -233,3 +233,35 @@ SET CreditCardNumber = '8765432187654321'
 WHERE CustomerID = 2;
 
 SELECT * FROM Customers;
+
+
+-- altering the customer id to to auto increament 
+ALTER TABLE Customers
+    ALTER COLUMN CustomerID SET DATA TYPE INT,
+    ALTER COLUMN CustomerID ADD GENERATED ALWAYS AS IDENTITY;
+
+SELECT setval(pg_get_serial_sequence('Customers', 'customerid'), (SELECT MAX(customerid) FROM Customers));
+-- testing
+INSERT INTO Customers (FirstName, LastName, Email, PhoneNumber, ShippingAddress)
+VALUES 
+('Bob', 'Johnson', 'bob.johnson@gmail.com', '555-987-6543', '789 Pine St');
+
+
+select * from orders;
+
+-- May be we require the orderID to make auto incremented if agent can't put any random id
+
+ALTER TABLE Orders
+    ALTER COLUMN OrderID SET DATA TYPE INT,
+    ALTER COLUMN OrderID ADD GENERATED ALWAYS AS IDENTITY;
+	
+SELECT setval(pg_get_serial_sequence('Orders', 'orderid'), (SELECT MAX(orderid) FROM Orders));
+
+INSERT INTO Orders (CustomerID, ProductID, OrderDate, Quantity, TotalPrice, OrderStatus)
+VALUES (1, 10017413, '2024-10-06', 1, 200, 'Processing');
+
+INSERT INTO customers (firstname, lastname, email, phonenumber, shippingaddress, creditcardnumber) 
+VALUES ('Peter', 'Persy', 'peter@gmail.com', '123456945', '123 Chicago st', '4574934901237823') RETURNING customerid";
+
+
+

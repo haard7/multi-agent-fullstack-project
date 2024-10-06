@@ -4,6 +4,8 @@
 
 - In this branch currently the development of product recommendation agent is going
 - it should be able to write the data into the database if user wants to purchase the recommended product
+- you can run either main-copy.py or main.py. I am currently modifying main-copy.py for some results.
+- First create the database using "ClothShop.sql" file in PostgreSQL. I have updated the schema in the next queries so please consider that in mind before running our code, As it is working with latest schema.
 
 ## How to Run
 
@@ -22,10 +24,12 @@
 
 6. run using below command
    `python -m postgres_da_ai_agent.main --prompt "get all the products for gender Men"`
+   `python -m postgres_da_ai_agent.main-copy --prompt "get all the products for gender Men"`
+
+   I have main-copy.py file to playaround which should not affect minimum viable execution I have in main. but you can
 
 ## Next steps
 
-1. should be able to get the context from previous chat because after the product being recommended the user might want to purchase that.
-2. Also, create the table where the credit card info of the user including the product id should be saved into the database
+1. Sequential chat after getting recommendation from product recommend agent break, so we need to create proper workflow which can talk to user seamlessly until user not checkout
 
    ....
