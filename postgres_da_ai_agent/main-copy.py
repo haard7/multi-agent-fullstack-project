@@ -45,6 +45,7 @@ def main():
 
         # GPT configuration
         gpt4_config = {
+            "model": "gpt-4o-mini",
             "use_cache": False,
             "temperature": 0,
             "config_list": autogen.config_list_from_models(["gpt-4o-mini"]),
@@ -126,6 +127,7 @@ def main():
         #     return have_content and "APPROVED" in content["content"]
 
         def is_termination_msg(content):
+            print("Haard - testing termination " + str(content.get("content")))
             if not content.get("content"):
                 return False
 
@@ -160,7 +162,7 @@ def main():
 2. If the request is about product recommendations or purchases, route it to the Product Recommendation Agent.
 3. If the request is about order status, route it to the Order Status Agent.
 4. After the initial routing, continue to facilitate communication between the user and the chosen agent until termination conditions are met.
-5. Do not switch between agents once an initial route is chosen unless explicitly instructed by the user.
+5. Any time you see any termination message then terminate the conversation.
 """
         PRODUCT_RECOMMENDATION_PROMPT = """
         You are the Product Recommendation Agent. Your task is to:
