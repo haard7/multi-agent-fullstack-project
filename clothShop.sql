@@ -263,5 +263,8 @@ VALUES (1, 10017413, '2024-10-06', 1, 200, 'Processing');
 INSERT INTO customers (firstname, lastname, email, phonenumber, shippingaddress, creditcardnumber) 
 VALUES ('Peter', 'Persy', 'peter@gmail.com', '123456945', '123 Chicago st', '4574934901237823') RETURNING customerid";
 
-
+select * from customers;
+delete from customers where customerid=11
+select * from orders;
+select * from products;
 

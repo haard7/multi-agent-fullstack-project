@@ -45,6 +45,7 @@ def main():
 
         # GPT configuration
         gpt4_config = {
+            "model": "gpt-4o-mini",
             "use_cache": False,
             "temperature": 0,
             "config_list": autogen.config_list_from_models(["gpt-4o-mini"]),
