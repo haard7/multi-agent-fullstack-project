@@ -161,7 +161,7 @@ def main():
                 creditcardnumber = input("Enter your credit card number: ")
 
                 # save customer information into customer table
-                customer_id = db.save_customer(
+                customerid = db.save_customer(
                     firstname,
                     lastname,
                     email,
@@ -178,8 +178,8 @@ def main():
                     "price"
                 ]  # Assuming the price is fetched from the recommended product
 
-                order_id = db.create_order(
-                    customer_id=customer_id,
+                orderid = db.create_order(
+                    customerid=customerid,
                     product_id=first_recommended_product["productid"],
                     order_date=order_date,
                     quantity=quantity,
@@ -187,7 +187,7 @@ def main():
                     order_status="Pending",  # Set the initial status to 'Pending'
                 )
 
-                print(f"Order placed successfully! Your order ID is {order_id}.")
+                print(f"Order placed successfully! Your order ID is {orderid}.")
 
             else:
                 print("Purchase cancelled.")

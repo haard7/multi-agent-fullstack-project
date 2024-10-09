@@ -169,15 +169,15 @@ class PostgresManager:
                     ),
                 )
 
-            customer_id = self.cur.fetchone()[0]
+            customerid = self.cur.fetchone()[0]
             self.conn.commit()
-            return customer_id
+            return customerid
         except Exception as e:
             self.conn.rollback()
             raise e
 
     def create_order(
-        self, customer_id, product_id, order_date, quantity, total_price, order_status
+        self, customerid, product_id, order_date, quantity, total_price, order_status
     ):
         try:
             insert_stmt = SQL(
@@ -191,7 +191,7 @@ class PostgresManager:
             self.cur.execute(
                 insert_stmt,
                 (
-                    customer_id,
+                    customerid,
                     product_id,
                     order_date,
                     quantity,
@@ -199,9 +199,9 @@ class PostgresManager:
                     order_status,
                 ),
             )
-            order_id = self.cur.fetchone()[0]
+            orderid = self.cur.fetchone()[0]
             self.conn.commit()
-            return order_id
+            return orderid
         except Exception as e:
             self.conn.rollback()
             raise e

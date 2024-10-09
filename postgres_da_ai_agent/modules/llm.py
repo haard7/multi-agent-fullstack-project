@@ -75,7 +75,7 @@ def add_cap_ref(
     """
     Attaches a capitalized reference to the prompt.
     Example
-        prompt = 'Refactor this code.'
+        prompt = 'Recommend a product for a customer'
         prompt_suffix = 'Make it more readable using this EXAMPLE.'
         cap_ref = 'EXAMPLE'
         cap_ref_content = 'def foo():\n    return True'
