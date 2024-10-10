@@ -49,3 +49,5 @@ pip-wheel-metadata
 /poetry.toml
 
 poetry/core/*
+
+/OAI_CONFIG_LIST

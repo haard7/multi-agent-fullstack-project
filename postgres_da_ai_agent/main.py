@@ -1,246 +1,247 @@
 import os
-from postgres_da_ai_agent.modules.db import PostgresManager
-from postgres_da_ai_agent.modules import llm
 import dotenv
 import argparse
 import autogen
 import datetime
-from autogen import Agent
+from postgres_da_ai_agent.modules.db import PostgresManager
+from postgres_da_ai_agent.modules import llm
 
 dotenv.load_dotenv()
 
-assert os.environ.get("DATABASE_URL"), "POSTGRES_CONNECTION_URL not found in .env file"
-assert os.environ.get("OPENAI_API_KEY"), "OPENAI_API_KEY not found in .env file"
-
-DB_URL = os.environ.get("DATABASE_URL")
+DATABASE_URL = os.environ.get("DATABASE_URL")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 POSTGRES_TABLE_DEFINITIONS_CAP_REF = "TABLE_DEFINITIONS"
 RESPONSE_FORMAT_CAP_REF = "RESPONSE_FORMAT"
+
 SQL_DELIMITER = "---------"
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--prompt", help="The prompt for the AI")
-    args = parser.parse_args()
+    arg = parser.parse_args()
 
-    if not args.prompt:
+    if not arg.prompt:
         print("Please provide a prompt")
         return
 
-    prompt = f"Fulfill this request: {args.prompt}. "
+    prompt = f"Fulfill this request: {arg.prompt}. "
 
-    with PostgresManager() as db:
-        db.connect_with_url(DB_URL)
+    db = PostgresManager()
+    db.connect_with_url(DATABASE_URL)
 
-        table_definitions = db.get_table_definitions_for_prompt()
+    table_definitions = db.get_table_definitions_for_prompt()
 
-        prompt = llm.add_cap_ref(
-            prompt,
-            f"Use these {POSTGRES_TABLE_DEFINITIONS_CAP_REF} to satisfy the request.",
-            POSTGRES_TABLE_DEFINITIONS_CAP_REF,
-            table_definitions,
-        )
+    prompt = llm.add_cap_ref(
+        prompt,
+        f"Use these {POSTGRES_TABLE_DEFINITIONS_CAP_REF} to satisfy the database query related to cloth retail.",
+        POSTGRES_TABLE_DEFINITIONS_CAP_REF,
+        table_definitions,
+    )
 
-        # GPT configuration
-        gpt4_config = {
-            "model": "gpt-4o-mini",
-            "use_cache": False,
-            "temperature": 0,
-            "config_list": autogen.config_list_from_models(["gpt-4o-mini"]),
-            "request_timeout": 120,
-            "functions": [
-                {
-                    "name": "run_sql",
-                    "description": "Run a SQL query against the postgres database",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "sql": {
-                                "type": "string",
-                                "description": "The SQL query to run",
-                            }
-                        },
-                        "required": ["sql"],
+    llm_config = {
+        "model": "gpt-4o-mini",
+        "config_list": autogen.config_list_from_json(
+            env_or_file="OAI_CONFIG_LIST",
+            filter_dict={"model": {"gpt-4o-mini"}},
+        ),
+        "seed": 44,
+        "temperature": 0,
+        "request_timeout": 120,
+        "functions": [
+            {
+                "name": "recommend_product",
+                "description": "Retrieves product recommendations based on the user's preferences by running SQL query against the postgres database",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "sql": {
+                            "type": "string",
+                            "description": "The SQL query to run",
+                        }
                     },
-                }
-            ],
-        }
+                    "required": ["sql"],
+                },
+            },
+            {
+                "name": "buy_product",
+                "description": "Saves customer and order details when a product is purchased by running SQL query against the postgres database",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "firstname": {
+                            "type": "string",
+                            "description": "First Name of the customer",
+                        },
+                        "lastname": {
+                            "type": "string",
+                            "description": "Last Name of the customer",
+                        },
+                        "email": {
+                            "type": "string",
+                            "description": "Email of the customer",
+                        },
+                        "phonenumber": {
+                            "type": "string",
+                            "description": "Phone Number of the customer",
+                        },
+                        "shippingaddress": {
+                            "type": "string",
+                            "description": "Shipping Address of the customer",
+                        },
+                        "creditcardnumber": {
+                            "type": "string",
+                            "description": "Credit Card Number of the customer",
+                        },
+                        "productid": {
+                            "type": "integer",
+                            "description": "The ID of the product being purchased",
+                        },
+                        "quantity": {
+                            "type": "integer",
+                            "description": "Quantity of the product",
+                        },
+                    },
+                    "required": [
+                        "firstname",
+                        "lastname",
+                        "email",
+                        "phonenumber",
+                        "shippingaddress",
+                        "creditcardnumber",
+                        "productid",
+                        "quantity",
+                    ],
+                },
+            },
+            {
+                "name": "get_order_status",
+                "description": "Retrieves order status based on orderid",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "order_id": {
+                            "type": "integer",
+                            "description": "The ID of the order to retrieve status for",
+                        }
+                    },
+                    "required": ["order_id"],
+                },
+            },
+            # {
+            #     "name": "product_recommendation_flow",
+            #     "description": "Handles the flow for purchasing the product if user wants to buy the recommended product",
+            #     "parameters": {
+            #         "type": "object",
+            #         "properties": {},
+            #         "required": [],
+            #     },
+            # }
+        ],
+    }
 
-        # SQL function map
-        function_map = {
-            "run_sql": db.run_sql,
-        }
+    function_map = {
+        "recommend_product": db.recommend_product,
+        "buy_product": db.buy_product,
+        "get_order_status": db.get_order_status,
+        # "product_recommendation_flow": product_recommendation_flow,
+    }
 
-        # Termination message function
-        def is_termination_msg(content):
-            have_content = content.get("content", None) is not None
-            return have_content and "APPROVED" in content["content"]
+    def terminate_message(*args):
+        return "TERMINATE"
 
-        # Prompts for each agent
-        USER_PROXY_PROMPT = "You are the user proxy agent. Based on the user's request, route the task to the appropriate agent (either Product Recommendation Agent or Order Status Agent)."
-        PRODUCT_RECOMMENDATION_PROMPT = (
-            # "You are the Product Recommendation Agent. Your task is to analyze the user's preferences and provide a single product recommendation based on the available data in the database, if there are multiple products eligible for recommendation then only return the first product,"
-            # "handle order processing if the user chooses to purchase the product."
-            "You are the Product Recommendation Agent. Your task is to analyze the user's preferences and provide a single product recommendation based on the available data in the database. After providing the recommendation, include a message asking if the user would like to purchase the product. if user says yes to buy the product then collect user information and save it in the database in its appropriate place. also save the order informaiton in the database."
-        )
-        ORDER_STATUS_PROMPT = "You are the Order Status Agent. Your task is to retrieve and provide the order status based on the user's request and available data in the database."
+        # Update the chat flow for better user interaction and termination logic
 
-        # Create the agents
-        user_proxy = autogen.UserProxyAgent(
-            name="User_Proxy",
-            system_message=USER_PROXY_PROMPT,
-            code_execution_config=False,
-            human_input_mode="ALWAYS",
-            is_termination_msg=is_termination_msg,
-        )
+    def handle_termination(response):
+        if response.lower() in ["no", "no thanks", "thank you"]:
+            return terminate_message()
 
-        product_recommendation = autogen.AssistantAgent(
-            name="Product_Recommendation",
-            llm_config=gpt4_config,
-            system_message=PRODUCT_RECOMMENDATION_PROMPT,
-            code_execution_config=False,
-            human_input_mode="NEVER",
-            is_termination_msg=is_termination_msg,
-            function_map=function_map,
-        )
+    # Proxy agent handling the user's main request and interaction
+    admin_user_proxy_agent = autogen.UserProxyAgent(
+        name="User_Proxy_Agent",
+        system_message="You are the admin overseeing the chat. Continue interacting with the appropriate agent until the request is fulfilled. ask user for details if product is recommended and user wants to buy it. also make sure the order details are returned to the user after the purchase is made.",
+        code_execution_config=False,
+        human_input_mode="ALWAYS",
+        function_map=function_map,
+        is_termination_msg=handle_termination,
+    )
 
-        order_status = autogen.AssistantAgent(
-            name="Order_Status",
-            llm_config=gpt4_config,
-            system_message=ORDER_STATUS_PROMPT,
-            code_execution_config=False,
-            human_input_mode="NEVER",
-            is_termination_msg=is_termination_msg,
-            function_map=function_map,
-        )
+    product_recommendation_agent = autogen.AssistantAgent(
+        name="Product_Recommendation_Agent",
+        system_message="I recommend products based on customer preferences. After recommendation, I will ask if the customer wants to purchase the product before saving the customer and order details.",
+        code_execution_config=False,
+        llm_config=llm_config,
+        function_map=function_map,
+    )
 
-        # Create a group chat
-        groupchat = autogen.GroupChat(
-            agents=[user_proxy, product_recommendation, order_status],
-            messages=[],
-            max_round=10,
-            # speaker_selection_method = custom_speaker_selection_method,
-        )
+    order_status_agent = autogen.AssistantAgent(
+        name="Order_Status_Agent",
+        system_message="I retrieve order details based on the order ID provided by the customer.",
+        code_execution_config=False,
+        llm_config=llm_config,
+        function_map=function_map,
+    )
 
-        manager = autogen.GroupChatManager(groupchat=groupchat, llm_config=gpt4_config)
-
-        # Routing logic for the user proxy agent
-        # old routing logic
-        #   def route_request(prompt_text):
-        #     if "recommend" in prompt_text.lower():
-        #         print(prompt_text + " - Routing to Product Recommendation Agent")
-        #         user_proxy.forward_request_to(product_recommendation)
-        #     elif "order status" in prompt_text.lower():
-        #         user_proxy.forward_request_to(order_status)
-        #     else:
-        #         print("No matching agent found for the request.")
-
-        # Handle Purchase confirmation flow
-
-        # def custom_speaker_selection_method(
-        #     last_speaker: Agent, groupchat: autogen.GroupChat
-        # ):
-        #     if last_speaker is user_proxy:
-        #         return product_recommendation
-
-        def get_response_from_agent(manager, agent):
-            print("Haard: it is calling me")
-            # I want to get the last response from the agent for further processing
-
-        def handle_purchase_and_payment_flow(manager, db, first_recommended_product):
-            purchase_confirmation = input("Do you want to buy this product? (yes/no): ")
-            if purchase_confirmation.lower() == "yes":
-                # collect user information
-                firstname = input("Enter your first name: ")
-                lastname = input("Enter your last name: ")
-                email = input("Enter your email: ")
-                phonenumber = input("Enter your phone number: ")
-                shippingaddress = input("Enter your shipping address: ")
-                creditcardnumber = input("Enter your credit card number: ")
-
-                # save customer information into customer table
-                customerid = db.save_customer(
-                    firstname,
-                    lastname,
-                    email,
-                    phonenumber,
-                    shippingaddress,
-                    creditcardnumber,
-                )
-
-                quantity = 1  # Assuming the quantity is 1 for simplicity
-                order_date = (
-                    datetime.date.today()
-                )  # Assuming today's date for the order date
-                total_price = first_recommended_product[
-                    "price"
-                ]  # Assuming the price is fetched from the recommended product
-
-                orderid = db.create_order(
-                    customerid=customerid,
-                    product_id=first_recommended_product["productid"],
-                    order_date=order_date,
-                    quantity=quantity,
-                    total_price=total_price,
-                    order_status="Pending",  # Set the initial status to 'Pending'
-                )
-
-                print(f"Order placed successfully! Your order ID is {orderid}.")
-
-            else:
-                print("Purchase cancelled.")
-
-        # Initiate chat with routing
-        user_proxy.initiate_chat(manager, clear_history=True, message=prompt)
-        # route_request(args.prompt)
-
-        # route_request(args.prompt, manager, groupchat)
-
-        # After recommendation prompt for purchase
-
-        # product_recommendation_response = manager.get_response_from_agent(
-        #     product_recommendation
-        # )
-
-        product_recommendation_response = get_response_from_agent(
-            manager, product_recommendation
-        )
-
-        if product_recommendation_response:
-            recommended_products = llm.safe_get(
-                product_recommendation_response, "choices.0.message.content"
+    # Modify interaction flow to handle purchase confirmation and termination
+    def handle_purchase_flow(response):
+        if response.lower() in ["yes", "i want to buy", "i will buy"]:
+            # Proceed with collecting purchase details
+            return (
+                "Please provide the following details to complete your purchase:\n"
+                "1. First Name:\n"
+                "2. Last Name:\n"
+                "3. Email:\n"
+                "4. Phone Number:\n"
+                "5. Shipping Address:\n"
+                "6. Credit Card Number:\n"
+                "7. Quantity (how many would you like to buy?):"
             )
-
-            if recommended_products:
-                first_recommended_product = recommended_products[0]
-
-                # extract required information from the product recommendation
-                product_id = first_recommended_product.get("productid")
-                product_name = first_recommended_product.get("productname")
-
-                import json
-
-                print(json.dumps(first_recommended_product, indent=4))
-
-                # handle purchase confirmation
-                handle_purchase_and_payment_flow(manager, db, first_recommended_product)
-            else:
-                print(
-                    json.dumps({"message": "No product recommendation found"}, indent=4)
-                )
         else:
-            print(
-                json.dumps(
-                    {"message": "No response from Product Recommendation Agent"},
-                    indent=4,
-                )
-            )
+            return "Okay! Let me know if you'd like help with something else."
 
-        # print(product_recommendation_response)
-        # purchase_confirmation = input("Do you want to buy this product? (yes/no): ")
-        # handle_purchase_and_payment_flow(purchase_confirmation)
+    # Asking if the user needs further assistance after providing order status
+    def ask_for_further_help():
+        return "Do you need any other help? (You can say 'No, thanks' to end the chat)"
+
+        return ask_for_further_help()
+
+    # Agent triggers product recommendation and waits for user response
+    def product_recommendation_flow():
+        # Recommend a product here
+        product = db.recommend_product(gender="Men")
+
+        # Ask the user if they want to purchase after recommendation
+        recommendation_message = (
+            f"We recommend: {product['productname']} by {product['productbrand']}\n"
+            f"Price: {product['price']}\n"
+            f"Would you like to purchase this product? (Yes/No)"
+        )
+
+        # Wait for user response to decide whether to proceed with purchase
+        user_response = input(
+            recommendation_message
+        )  # Assuming input is used for simplicity
+        return handle_purchase_flow(user_response)
+
+    groupchat = autogen.GroupChat(
+        agents=[
+            admin_user_proxy_agent,
+            product_recommendation_agent,
+            order_status_agent,
+        ],
+        messages=[],
+        max_round=20,
+    )
+
+    groupchat_manager = autogen.GroupChatManager(
+        groupchat=groupchat, llm_config=llm_config
+    )
+
+    # Initiate the chat with the adjusted flow
+    admin_user_proxy_agent.initiate_chat(
+        groupchat_manager, clear_history=True, message=prompt
+    )
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ class PostgresManager:
     def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val):
         if self.cur:
             self.cur.close()
         if self.conn:
@@ -26,7 +26,7 @@ class PostgresManager:
         columns = _dict.keys()
         values = [SQL("%s")] * len(columns)
         upsert_stmt = SQL(
-            "INSERT INTO {} ({}) VALUES ({}) ON CONFLICT (id) DO UPDATE SET {}"
+            "INSERT INTO {} ({}) VALUES ({}) ON CONFLICT (customerid) DO UPDATE SET {}"
         ).format(
             Identifier(table_name),
             SQL(", ").join(map(Identifier, columns)),
@@ -47,7 +47,7 @@ class PostgresManager:
         self.conn.commit()
 
     def get(self, table_name, _id):
-        select_stmt = SQL("SELECT * FROM {} WHERE id = %s").format(
+        select_stmt = SQL("SELECT * FROM {} WHERE customerid = %s").format(
             Identifier(table_name)
         )
         self.cur.execute(select_stmt, (_id,))
@@ -57,10 +57,6 @@ class PostgresManager:
         select_all_stmt = SQL("SELECT * FROM {}").format(Identifier(table_name))
         self.cur.execute(select_all_stmt)
         return self.cur.fetchall()
-
-    # def run_sql(self, sql):
-    #     self.cur.execute(sql)
-    #     return self.cur.fetchall()
 
     def run_sql(self, sql) -> str:
         self.cur.execute(sql)
@@ -73,12 +69,9 @@ class PostgresManager:
         return json_result
 
     def datetime_handler(self, obj):
-        """
-        Handle datetime objects when serializing to JSON.
-        """
         if isinstance(obj, datetime):
             return obj.isoformat()
-        return str(obj)  # or just return the object unchanged, or another default value
+        return str(obj)
 
     def get_table_definition(self, table_name):
         get_def_stmt = """
@@ -91,7 +84,7 @@ class PostgresManager:
         JOIN pg_attribute ON pg_attribute.attrelid = pg_class.oid
         WHERE pg_attribute.attnum > 0
             AND pg_class.relname = %s
-            AND pg_namespace.nspname = 'public'  -- Assuming you're interested in public schema
+            AND pg_namespace.nspname = 'public'
         """
         self.cur.execute(get_def_stmt, (table_name,))
         rows = self.cur.fetchall()
@@ -115,105 +108,158 @@ class PostgresManager:
             definitions.append(self.get_table_definition(table_name))
         return "\n\n".join(definitions)
 
-    def save_customer(
-        self, firstname, lastname, email, phonenumber, shippingaddress, creditcardnumber
+    # New function to handle product recommendation
+    def recommend_product(self, sql) -> str:
+        self.cur.execute(sql)
+        columns = [desc[0] for desc in self.cur.description]
+        res = self.cur.fetchall()
+
+        list_of_dicts = [dict(zip(columns, row)) for row in res]
+
+        json_result = json.dumps(list_of_dicts, indent=4, default=self.datetime_handler)
+        return json_result
+
+    def buy_product(
+        self,
+        firstname,
+        lastname,
+        email,
+        phonenumber,
+        shippingaddress,
+        creditcardnumber,
+        productid,
+        quantity,
     ):
         try:
-            # Check if customer exists
-            self.cur.execute(
-                "SELECT customerid FROM customers WHERE email = %s", (email,)
-            )
-            existing_customer = self.cur.fetchone()
-
-            if existing_customer:
-                # Update existing customer
-                update_stmt = SQL(
-                    """
-                    UPDATE customers
-                    SET firstname = %s, lastname = %s, phonenumber = %s,
-                        shippingaddress = %s, creditcardnumber = %s
-                    WHERE email = %s
-                    RETURNING customerid
-                """
-                )
-                self.cur.execute(
-                    update_stmt,
-                    (
-                        firstname,
-                        lastname,
-                        phonenumber,
-                        shippingaddress,
-                        creditcardnumber,
-                        email,
-                    ),
-                )
-            else:
-                # Insert new customer
-                insert_stmt = SQL(
-                    """
-                    INSERT INTO customers
-                    (firstname, lastname, email, phonenumber, shippingaddress, creditcardnumber)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                    RETURNING customerid
-                """
-                )
-                self.cur.execute(
-                    insert_stmt,
-                    (
-                        firstname,
-                        lastname,
-                        email,
-                        phonenumber,
-                        shippingaddress,
-                        creditcardnumber,
-                    ),
-                )
-
-            customerid = self.cur.fetchone()[0]
-            self.conn.commit()
-            return customerid
-        except Exception as e:
-            self.conn.rollback()
-            raise e
-
-    def create_order(
-        self, customerid, product_id, order_date, quantity, total_price, order_status
-    ):
-        try:
-            insert_stmt = SQL(
-                """
-                INSERT INTO orders
-                (customerid, productid, orderdate, quantity, totalprice, orderstatus)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                RETURNING orderid
+            # Step 1: Insert customer details into the `customers` table
+            insert_customer_query = """
+            INSERT INTO customers (firstname, lastname, email, phonenumber, shippingaddress, creditcardnumber)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING customerid;
             """
+            customer_data = (
+                firstname,
+                lastname,
+                email,
+                phonenumber,
+                shippingaddress,
+                creditcardnumber,
             )
+
+            # Execute the insert query and get the new customerid
+            self.cur.execute(insert_customer_query, customer_data)
+            customerid = self.cur.fetchone()[0]  # Fetch the generated customerid
+
+            # Step 2: Fetch product price
             self.cur.execute(
-                insert_stmt,
-                (
-                    customerid,
-                    product_id,
-                    order_date,
-                    quantity,
-                    total_price,
-                    order_status,
-                ),
+                "SELECT price FROM products WHERE productid = %s", (productid,)
             )
-            orderid = self.cur.fetchone()[0]
+            product_price = self.cur.fetchone()[0]
+            total_price = product_price * quantity
+
+            # Step 3: Insert order details into the `orders` table
+            insert_order_query = """
+            INSERT INTO orders (customerid, productid, orderdate, quantity, totalprice, orderstatus)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING orderid;
+            """
+            order_data = (
+                customerid,
+                productid,
+                datetime.now(),
+                quantity,
+                total_price,
+                "pending",  # Setting the initial order status as "pending"
+            )
+
+            # Execute the insert query and get the new orderid
+            self.cur.execute(insert_order_query, order_data)
+            orderid = self.cur.fetchone()[0]  # Fetch the generated orderid
+
+            # Commit the transaction
             self.conn.commit()
+
+            # Return the newly created orderid as confirmation
             return orderid
+
         except Exception as e:
+            # Rollback the transaction in case of any error
             self.conn.rollback()
             raise e
 
+        # old recommend_product function
+        # def recommend_product(self, gender=None, primary_color=None, price_range=None):
+        # query = "SELECT * FROM products WHERE 1=1"
+        # params = []
+        # if gender:
+        #     query += " AND gender = %s"
+        #     params.append(gender)
+        # if primary_color:
+        #     query += " AND primarycolor = %s"
+        #     params.append(primary_color)
+        # if price_range:
+        #     query += " AND price BETWEEN %s AND %s"
+        #     params.extend(price_range)
 
-# def get_product_id(self, product_name):
-#     """
-#     Retrieve the product ID from the 'products' table based on the product name.
-#     """
-#     select_product_stmt = """
-#     SELECT id FROM products WHERE product_name = %s;
-#     """
-#     self.cur.execute(select_product_stmt, (product_name,))
-#     result = self.cur.fetchone()
-#     return result[0] if result else None
+        # self.cur.execute(query, tuple(params))
+        # products = self.cur.fetchall()
+        # return products
+
+        # old - 1.1 function to handle product purchase and customer details saving
+
+        # def buy_product(self, customer_details, product_id, quantity):
+        #     try:
+        #         # Save or update customer details first
+        #         self.upsert("customers", customer_details)
+        #         customer_id = customer_details.get("customerid")
+
+        #         # Fetch product price
+        #         self.cur.execute(
+        #             "SELECT price FROM products WHERE productid = %s", (product_id,)
+        #         )
+        #         product_price = self.cur.fetchone()[0]
+        #         total_price = product_price * quantity
+
+        #         # Create a new order
+        #         order_data = {
+        #             # "orderid": self._generate_order_id(),
+        #             "customerid": customer_id,
+        #             "productid": product_id,
+        #             "orderdate": datetime.now(),
+        #             "quantity": quantity,
+        #             "totalprice": total_price,
+        #             "orderstatus": "pending",
+        #         }
+        #         self.upsert("orders", order_data)
+
+        #         # Fetch the newly created order to return details
+        #         self.cur.execute(
+        #             "SELECT * FROM orders WHERE orderid = %s", (order_data["orderid"],)
+        #         )
+        #         order_details = self.cur.fetchone()
+        #         return order_details
+
+        #     except Exception as e:
+        #         self.conn.rollback()
+        #         raise e
+
+        # New function to get order status based on order_id
+
+    def get_order_status(self, order_id):
+        try:
+            self.cur.execute("SELECT * FROM orders WHERE orderid = %s", (order_id,))
+            order_status = self.cur.fetchone()
+            if order_status:
+                return order_status
+            else:
+                return "Order not found"
+        except Exception as e:
+            raise e
+
+    # Helper function to generate unique order ID (custom logic can be implemented)
+    def _generate_order_id(self):
+        self.cur.execute("SELECT MAX(orderid) FROM orders")
+        max_order_id = self.cur.fetchone()[0]
+        if max_order_id is None:
+            return 1
+        return max_order_id + 1
