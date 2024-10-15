@@ -1,6 +1,3 @@
--- Query-1: Create a table named Products with the following columns:
--- make sure you are in the query tool of your database
-
 CREATE TABLE Products (
 	ProductID INT PRIMARY KEY,
 	ProductName TEXT,
@@ -14,7 +11,6 @@ CREATE TABLE Products (
 	ImageUrl TEXT
 );
 
--- Query-2
 INSERT INTO
 	Products (
 		ProductID,
@@ -126,47 +122,50 @@ VALUES
 		'https://i.imgur.com/Yu5ita5.png'
 	);
 
+SELECT * FROM Products;
 
--- Query for customer
 CREATE TABLE Customers (
-	CustomerID INT PRIMARY KEY,
+	CustomerID INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	FirstName TEXT,
 	LastName TEXT,
 	Email TEXT,
 	PhoneNumber TEXT,
-	ShippingAddress TEXT
+	ShippingAddress TEXT,
+	CreditCardNumber TEXT
 );
 
 INSERT INTO
 	Customers (
-		CustomerID,
 		FirstName,
 		LastName,
 		Email,
 		PhoneNumber,
-		ShippingAddress
+		ShippingAddress,
+		CreditCardNumber
 	)
 VALUES
 	(
-		1,
 		'John',
 		'Doe',
 		'john.doe@example.com',
 		'555-1234',
-		'123 Elm Street'
+		'123 Elm Street',
+		'1234567812345678'
 	),
 	(
-		2,
 		'Jane',
 		'Smith',
 		'jane.smith@example.com',
 		'555-5678',
-		'456 Oak Avenue'
+		'456 Oak Avenue',
+		'8765432187654321'
 	);
 
--- Queries for order status
+
+SELECT * FROM Customers;
+
 CREATE TABLE Orders (
-	OrderID INT PRIMARY KEY,
+	OrderID INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	CustomerID INT,
 	ProductID INT,
 	OrderDate DATE,
@@ -179,7 +178,6 @@ CREATE TABLE Orders (
 
 INSERT INTO
 	Orders (
-		OrderID,
 		CustomerID,
 		ProductID,
 		OrderDate,
@@ -189,7 +187,6 @@ INSERT INTO
 	)
 VALUES
 	(
-		1001,
 		1,
 		10017413,
 		'2024-09-10',
@@ -198,7 +195,6 @@ VALUES
 		'Shipped'
 	),
 	(
-		1002,
 		2,
 		10016283,
 		'2024-09-11',
@@ -207,7 +203,6 @@ VALUES
 		'Delivered'
 	),
 	(
-		1003,
 		1,
 		10016283,
 		'2024-09-12',
@@ -216,55 +211,10 @@ VALUES
 		'Processing'
 	);
 
-	select * from customers;
-	select * from orders;
-	select * from products;
-
----- Changes after creating the table as above ---------------------------
-	ALTER TABLE Customers
-ADD COLUMN CreditCardNumber TEXT;
-
-UPDATE Customers
-SET CreditCardNumber = '1234567812345678'
-WHERE CustomerID = 1;
-
-UPDATE Customers
-SET CreditCardNumber = '8765432187654321'
-WHERE CustomerID = 2;
-
-SELECT * FROM Customers;
-
-
--- altering the customer id to to auto increament 
-ALTER TABLE Customers
-    ALTER COLUMN CustomerID SET DATA TYPE INT,
-    ALTER COLUMN CustomerID ADD GENERATED ALWAYS AS IDENTITY;
-
-SELECT setval(pg_get_serial_sequence('Customers', 'customerid'), (SELECT MAX(customerid) FROM Customers));
--- testing
-INSERT INTO Customers (FirstName, LastName, Email, PhoneNumber, ShippingAddress)
-VALUES 
-('Bob', 'Johnson', 'bob.johnson@gmail.com', '555-987-6543', '789 Pine St');
-
-
-select * from orders;
-
--- May be we require the orderID to make auto incremented if agent can't put any random id
-
-ALTER TABLE Orders
-    ALTER COLUMN OrderID SET DATA TYPE INT,
-    ALTER COLUMN OrderID ADD GENERATED ALWAYS AS IDENTITY;
-	
-SELECT setval(pg_get_serial_sequence('Orders', 'orderid'), (SELECT MAX(orderid) FROM Orders));
+SELECT * FROM Orders;
 
 INSERT INTO Orders (CustomerID, ProductID, OrderDate, Quantity, TotalPrice, OrderStatus)
 VALUES (1, 10017413, '2024-10-06', 1, 200, 'Processing');
 
 INSERT INTO customers (firstname, lastname, email, phonenumber, shippingaddress, creditcardnumber) 
-VALUES ('Peter', 'Persy', 'peter@gmail.com', '123456945', '123 Chicago st', '4574934901237823') RETURNING customerid";
-
-select * from customers;
-delete from customers where customerid=11
-select * from orders;
-select * from products;
-
+VALUES ('Peter', 'Persy', 'peter@gmail.com', '123456945', '123 Chicago st', '4574934901237823') RETURNING customerid;
