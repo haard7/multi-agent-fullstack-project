@@ -7,6 +7,10 @@
 - First create the database using "ClothShop.sql" file in PostgreSQL. I have updated the schema in the next queries so please consider that in mind before running our code, As it is working with latest schema.
 - Order stautus agent working perfectly. run `python -m postgres_da_ai_agent.main --prompt "give the order status of my order with ordeid 1003"`
 
+- Flask: 3.0.3
+- flast_cors: 4.0.1
+- autogen-agentchat~=0.2
+
 ## How to Run
 
 1. clone the repo including this branch
@@ -25,7 +29,6 @@
 6. run using below command
 
    `python -m postgres_da_ai_agent.main --prompt "give me a product Pink colored shorts for Men"`
-
 
 ## Next steps
 

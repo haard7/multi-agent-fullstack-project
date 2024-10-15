@@ -48,7 +48,7 @@ def main():
         ),
         "seed": 44,
         "temperature": 0,
-        "request_timeout": 120,
+        # "request_timeout": 120,
         "functions": [
             {
                 "name": "recommend_product",
@@ -139,6 +139,16 @@ def main():
             #     },
             # }
         ],
+    }
+
+    llm_config_groupchat = {
+        "model": "gpt-4o-mini",
+        "config_list": autogen.config_list_from_json(
+            env_or_file="OAI_CONFIG_LIST",
+            filter_dict={"model": {"gpt-4o-mini"}},
+        ),
+        "seed": 44,
+        "temperature": 0,
     }
 
     function_map = {
@@ -235,7 +245,7 @@ def main():
     )
 
     groupchat_manager = autogen.GroupChatManager(
-        groupchat=groupchat, llm_config=llm_config
+        groupchat=groupchat, llm_config=llm_config_groupchat
     )
 
     # Initiate the chat with the adjusted flow

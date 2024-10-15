@@ -1,0 +1,22 @@
+
+{
+  "message": "tell me a joke.",
+  "agents_info": [
+    {
+      "name": "Assistant",
+      "type": "AssistantAgent",
+      "llm": {
+        "model": "gpt-4o-mini"
+      },
+      "system_message": "You are a personal assistant who can answer questions.",
+      "description": "This is a personal assistant who can answer questions."
+    }
+  ],
+  "task_info": {
+    "id": 0,
+    "name": "Personal Assistant",
+    "description": "This is a powerful personal assistant.",
+    "maxMessages": 5,
+    "speakSelMode": "auto"
+  }
+}
