@@ -7,6 +7,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import queue
 import autogen
+import json
 
 from postgres_da_ai_agent.modules.db import PostgresManager
 from postgres_da_ai_agent.modules import llm
@@ -363,9 +364,39 @@ def get_messages():
 
     if not print_queue.empty():
         msg = print_queue.get()
+
+        # If msg is already a dict, skip json.loads
+        if isinstance(msg, str):  # Only attempt to load if it's a string
+            try:
+                msg = json.loads(msg)
+            except json.JSONDecodeError:
+                pass  # If `msg` is not a JSON string, keep it as is
+
+        # Ensure the 'message' part is also parsed if it's a JSON string
+        if isinstance(msg, dict) and isinstance(msg.get("message"), str):
+            try:
+                msg["message"] = json.loads(msg["message"])
+            except json.JSONDecodeError:
+                pass  # If the 'message' is not a JSON string, keep it as is
+
         return jsonify({"message": msg, "chat_status": chat_status}), 200
     else:
         return jsonify({"message": None, "chat_status": chat_status}), 200
+
+
+# def get_messages():
+#     global chat_status
+
+#     if not print_queue.empty():
+#         msg = print_queue.get()
+#         try:
+#             msg = json.loads(msg)
+#         except json.JSONDecodeError:
+#             pass  # If `msg` is not a JSON string, keep it as is
+
+#         return jsonify({"message": msg, "chat_status": chat_status}), 200
+#     else:
+#         return jsonify({"message": None, "chat_status": chat_status}), 200
 
 
 if __name__ == "__main__":
