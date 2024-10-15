@@ -49,18 +49,12 @@ GET: /api/get_message
 	- Getting the response from agents to the ui
 ```
 
-{
-"chat_status": "inputting",
-"message": {
-"message": "Great choice! To proceed with the purchase of the **SPYKAR Women Pink Cropped Jeans**, please provide the following details:\n\n1. First Name:\n2. Last Name:\n3. Email:\n4. Phone Number:\n5. Shipping Address:\n6. Credit Card Number:\n7. Quantity (how many would you like to purchase?):",
-"user": "product_recommendation_agent"
-}
-}
+- Note here there will be no json body input
 
 ```
 POST: /api/send_message
 	- http://127.0.0.1:5008/api/send_message
-Get the inputs from the user
+    - Get the inputs from the user
 ```
 
 {
