@@ -92,14 +92,17 @@ def run_chat(request_json):
                 "name": "product_recommendation_agent",
                 "type": "AssistantAgent",
                 "llm": {"model": "gpt-4o-mini"},
-                "system_message": "I recommend products based on customer preferences. After recommendation, I will ask if the customer wants to purchase the product before saving the customer and order details.",
+                "system_message": """I recommend products based on customer preferences. After recommendation, I will ask if the customer wants to purchase the product before saving the customer and order details. I will make sure about below details before I take any action
+                - if customer give the product name like shirt, shorts etc.. then I will use keyword search in product name to find the relevant data.
+                - if the customer ask for product of specific size like large, small or medium then I will search for first letter of that in capital letter in size column.
+                """,
                 "description": "This is a assistant agent who can recommend products based on customer preferences. Also perform purchsing if user wants to buy that product",
             },
             {
                 "name": "order_status_agent",
                 "type": "AssistantAgent",
                 "llm": {"model": "gpt-4o-mini"},
-                "system_message": "I retrieve order details based on the order ID provided by the customer.",
+                "system_message": "I retrieve order details based on the order ID provided by the customer. Return the response in proper format by summarizing the data",
                 "description": "This is a assistant agent who can retrieve order details based on the order ID provided by the customer. if not provided then ask for it",
             },
         ]
