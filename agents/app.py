@@ -2,8 +2,8 @@
 # import os
 # import dotenv
 # import autogen
-# from postgres_da_ai_agent.modules.db import PostgresManager
-# from postgres_da_ai_agent.modules import llm
+# from agents.modules.db import PostgresManager
+# from agents.modules import llm
 
 # dotenv.load_dotenv()
 # DATABASE_URL = os.getenv("DATABASE_URL")

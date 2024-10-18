@@ -5,7 +5,7 @@
 - Now it works with Python based Flask API. now we will run the `api.py` file to run flask app
 - you can run either main.py.
 - First create the database using "ClothShop.sql" file in PostgreSQL. I have updated the schema in the next queries so please consider that in mind before running our code, As it is working with latest schema.
-- we can also check the order status, Order stautus agent working perfectly. run `python -m postgres_da_ai_agent.main --prompt "give the order status of my order with ordeid 1003"`
+- we can also check the order status, Order stautus agent working perfectly. run `python -m agents.main --prompt "give the order status of my order with ordeid 1003"`
 
 Please install below libraries in addition to previous one! - Flask~=3.0.3 - flast_cors~=4.0.1 - autogen-agentchat~=0.2
 
@@ -26,7 +26,7 @@ Please install below libraries in addition to previous one! - Flask~=3.0.3 - fla
 
 6. run using below command - for API response
 
-`python -m postgres_da_ai_agent.api`
+`python -m agents.api`
 
 - Then use run below api in the Postman
 
@@ -66,7 +66,7 @@ POST: /api/send_message
 
 6. run using below command - For command line output
 
-   `python -m postgres_da_ai_agent.main --prompt "give me a product Pink colored shorts for Men"`
+   `python -m agents.main --prompt "give me a product Pink colored shorts for Men"`
 
 ## Next steps
 

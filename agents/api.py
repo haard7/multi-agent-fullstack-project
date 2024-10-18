@@ -9,8 +9,8 @@ import queue
 import autogen
 import json
 
-from postgres_da_ai_agent.modules.db import PostgresManager
-from postgres_da_ai_agent.modules import llm
+from agents.modules.db import PostgresManager
+from agents.modules import llm
 from autogen.agentchat.contrib.gpt_assistant_agent import GPTAssistantAgent
 from autogen.agentchat import AssistantAgent, UserProxyAgent
 
@@ -107,7 +107,7 @@ def run_chat(request_json):
             "id": 0,
             "name": "Personal Assistant",
             "description": "This is a powerful personal assistant.",
-            "maxMessages": 15,
+            "maxMessages": 25,
             "speakSelMode": "auto",
         }
 
