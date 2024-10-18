@@ -247,7 +247,10 @@ class PostgresManager:
 
     def get_order_status(self, order_id):
         try:
-            self.cur.execute("SELECT * FROM orders WHERE orderid = %s", (order_id,))
+            self.cur.execute(
+                "SELECT orderdate, orderstatus FROM orders WHERE orderid = %s",
+                (order_id,),
+            )
             order_status = self.cur.fetchone()
             if order_status:
                 return order_status
