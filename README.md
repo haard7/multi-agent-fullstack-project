@@ -12,7 +12,7 @@ Please install below libraries in addition to previous one! - Flask~=3.0.3 - fla
 ## How to Run
 
 1. clone the repo including this branch
-2. use python 3.10 and create venv (virtualenv)
+2. use python 3.10 and create venv (virtualenv): `py -3.10 -m pip install virtualenv` and `py -3.10 -m virtualenv venv`
 3. install the packages using `pip install -r requirements.txt`
 4. create a file in root directory called `.env`
 5. put below in the env file
