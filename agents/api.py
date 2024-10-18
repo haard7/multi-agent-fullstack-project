@@ -110,7 +110,7 @@ def run_chat(request_json):
             "id": 0,
             "name": "Personal Assistant",
             "description": "This is a powerful personal assistant.",
-            "maxMessages": 25,
+            "maxMessages": 30,
             "speakSelMode": "auto",
         }
 
