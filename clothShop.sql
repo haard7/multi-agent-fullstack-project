@@ -186,7 +186,38 @@ SELECT
 FROM
     Orders;
 
+-- updated with new Table: product_returns
+
+CREATE TABLE Product_defect (
+    orderid INT PRIMARY KEY,
+    defect_product_img VARCHAR(255) NOT NULL
+);
+
+INSERT INTO Product_defect (orderid, defect_product_img)
+VALUES 
+    (11, 'https://i.imgur.com/mY5e7mx.png'),
+    (12, 'https://i.imgur.com/syvRx9w.png'),
+    (13, 'https://i.imgur.com/9GgyJE5.png');
+
+	
+CREATE TABLE Package_damaged (
+    orderid INT PRIMARY KEY REFERENCES Orders(Orderid) ON DELETE CASCADE,
+    damaged_package_img VARCHAR(255) NOT NULL
+);
+
+INSERT INTO Package_damaged (orderid, damaged_package_img)
+VALUES 
+    (5, 'https://i.imgur.com/R53x4rr.png '),
+    (8, 'https://i.imgur.com/ElLuHVN.png'),
+    (9, 'https://i.imgur.com/DNQTxC0.png');
+	
+
+
+
 select * from customers;
 delete from customers where customerid=1
 select * from orders;
 select * from products;
+select * from Product_defect;
+select * from Package_damaged
+
