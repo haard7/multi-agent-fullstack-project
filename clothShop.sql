@@ -201,7 +201,7 @@ VALUES
 
 	
 CREATE TABLE Package_damaged (
-    orderid INT PRIMARY KEY REFERENCES Orders(Orderid) ON DELETE CASCADE,
+    orderid INT PRIMARY KEY,
     damaged_package_img VARCHAR(255) NOT NULL
 );
 
@@ -210,8 +210,19 @@ VALUES
     (5, 'https://i.imgur.com/R53x4rr.png '),
     (8, 'https://i.imgur.com/ElLuHVN.png'),
     (9, 'https://i.imgur.com/DNQTxC0.png');
-	
 
+
+CREATE TABLE Fraud_transaction (
+	orderid INT PRIMARY KEY,
+	fraud_transaction_img VARCHAR(255) NOT NULL
+   -- we are not having the charged_price attribute here as we will cross check the recognized price with what in database on the fly
+);
+
+
+INSERT INTO Fraud_transaction (orderid, fraud_transaction_img)
+VALUES 
+	(10, 'https://i.imgur.com/CsDjUVs.png'),
+    (12,'https://i.imgur.com/YUieKTf.png');
 
 
 select * from customers;
@@ -219,5 +230,6 @@ delete from customers where customerid=1
 select * from orders;
 select * from products;
 select * from Product_defect;
-select * from Package_damaged
+select * from Package_damaged;
+select * from Fraud_transaction;
 
