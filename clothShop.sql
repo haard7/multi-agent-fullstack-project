@@ -195,9 +195,9 @@ CREATE TABLE Product_defect (
 
 INSERT INTO Product_defect (orderid, defect_product_img)
 VALUES 
-    (11, 'https://i.imgur.com/mY5e7mx.png'),
-    (12, 'https://i.imgur.com/syvRx9w.png'),
-    (13, 'https://i.imgur.com/9GgyJE5.png');
+    (11, 'https://i.postimg.cc/zXpW8MFY/dm1.png '),
+    (12, 'https://i.postimg.cc/520z03sY/dm2.png'),
+    (13, 'https://i.postimg.cc/8zjFDCCL/dm3.png');
 
 	
 CREATE TABLE Package_damaged (
@@ -207,9 +207,9 @@ CREATE TABLE Package_damaged (
 
 INSERT INTO Package_damaged (orderid, damaged_package_img)
 VALUES 
-    (5, 'https://i.imgur.com/R53x4rr.png '),
-    (8, 'https://i.imgur.com/ElLuHVN.png'),
-    (9, 'https://i.imgur.com/DNQTxC0.png');
+    (5, 'https://i.postimg.cc/wMqvrqPy/dam1.png'),
+    (8, 'https://i.postimg.cc/xTd8ydMB/dam2.png'),
+    (9, 'https://i.postimg.cc/Bv2nQPfP/dam3.png');
 
 
 CREATE TABLE Fraud_transaction (
@@ -221,8 +221,8 @@ CREATE TABLE Fraud_transaction (
 
 INSERT INTO Fraud_transaction (orderid, fraud_transaction_img)
 VALUES 
-	(10, 'https://i.imgur.com/CsDjUVs.png'),
-    (12,'https://i.imgur.com/YUieKTf.png');
+	(10, 'https://i.postimg.cc/VshQps2x/ft1.png'),
+    (12,'https://i.postimg.cc/3x5MrS89/ft2.png');
 
 
 select * from customers;
