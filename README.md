@@ -1,4 +1,4 @@
-## Branch: `feature/ui-integration`
+## Branch: `main`
 
 ### Description
 
@@ -15,6 +15,26 @@ Please install below libraries in addition to previous one! - Flask~=3.0.3 - fla
 2. use python 3.10 and create venv (virtualenv): `py -3.10 -m pip install virtualenv` and `py -3.10 -m virtualenv venv`
 3. install the packages using `pip install -r requirements.txt`
 4. create a file in root directory called `.env`
+5. Create another file in root directory called `OAI_CONFIG_LIST` (No file extension) then paste below and add you api-key there
+
+```JSON
+
+[
+  {
+    "model": "gpt-4o-mini",
+    "api_key": " "
+  },
+  {
+    "model": "gpt-4o",
+    "api_key": " "
+  }
+
+
+]
+
+
+```
+
 5. put below in the env file
 
 ```
