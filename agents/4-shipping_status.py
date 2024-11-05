@@ -188,7 +188,7 @@ def main():
 
     damage_defective_status_agent = autogen.AssistantAgent(
         name="damage_defective_status_agent",
-        system_message="""For the customer queries related to defective product or damaged package, I retrieve the image url from database correspoding to the orderid provided by the customer. If orderid is not provided then I will ask for orderid before proceeding.""",
+        system_message="""For the customer queries related to defective product or damaged package, if user have not given the image url or order id then I will ask for the order id or image url. if user enters the order id then I will retrieve the image url corresponding to that orderid from database otherwise proceed with provided image url from input""",
         code_execution_config=False,
         llm_config=llm_config,
         function_map=function_map,
@@ -198,7 +198,18 @@ def main():
         name="image-explainer",
         max_consecutive_auto_reply=10,
         llm_config=llm_config,
-        system_message="I will use the image <img {img_url}> to analyze and give the description of the image and condition of product or package image",
+        system_message="I will use image url and set it as image_url and use <img {image_url}> to analyze and give the description of the image of product or package image using my vision capability. here image_url is the url of the image.",
+    )
+
+    shipping_status_agent = autogen.AssistantAgent(
+        name="shipping_status_agent",
+        max_consecutive_auto_reply=10,
+        llm_config=llm_config,
+        system_message=""" I will use the description of the image from image_explainer agent and give the final one decision out of below with respective description as well as the image url.
+        1) Refund: if product or package seems defective of damaged then I will provide the refund to the customer.
+        2) Replace: if package is wet then I will replace the package
+        3) Escalate to human agent: if there is no defect or damage then I will escalate to human agent for further assistance.
+        """,
     )
 
     groupchat = autogen.GroupChat(
@@ -206,6 +217,7 @@ def main():
             image_explainer,
             damage_defective_status_agent,
             admin_user_proxy_agent,
+            shipping_status_agent,
         ],
         messages=[],
         max_round=13,

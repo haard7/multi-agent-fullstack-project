@@ -170,7 +170,7 @@ def main():
     # Proxy agent handling the user's main request and interaction
     admin_user_proxy_agent = autogen.UserProxyAgent(
         name="User_Proxy_Agent",
-        system_message="You are the admin overseeing the chat. Continue interacting with the appropriate agent until the request is fulfilled. ask user for details if product is recommended and user wants to buy it. also make sure the order details are returned to the user after the purchase is made.",
+        system_message="You are the admin overseeing the chat related to product recommendation, purchase and . Continue interacting with the appropriate agent until the request is fulfilled. ask user for details if product is recommended and user wants to buy it. also make sure the order details are returned to the user after the purchase is made.",
         code_execution_config=False,
         human_input_mode="ALWAYS",
         function_map=function_map,
