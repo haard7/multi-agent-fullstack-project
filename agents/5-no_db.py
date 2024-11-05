@@ -111,7 +111,7 @@ def main():
     # Proxy agent handling the user's main request and interaction
     admin_user_proxy_agent = autogen.UserProxyAgent(
         name="User_Proxy_Agent",
-        system_message="You are the admin overseeing the chat. continue interacting with the respective agent until request is fulfilled.",
+        system_message="You are the admin overseeing the chat. continue interacting with the respective agent until request is fulfilled. make sure to return the same image to the user for confirmation",
         code_execution_config=False,
         human_input_mode="ALWAYS",
         # function_map=function_map,
