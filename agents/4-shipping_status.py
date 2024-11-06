@@ -195,19 +195,19 @@ def main():
         is_termination_msg=handle_termination,
     )
 
-    damage_defective_status_agent = autogen.AssistantAgent(
-        name="damage_defective_status_agent",
-        system_message="""For the customer queries related to defective product or damaged package,if use have image url in the input then proceed to the next agent otherwise check if use have given the order id. if none of both are given in input then I will ask for the order id or image url. if user enters the order id then I will retrieve the image url corresponding to that orderid from database otherwise proceed with provided image url from input""",
-        code_execution_config=False,
-        llm_config=llm_config,
-        function_map=function_map,
-    )
+    # damage_defective_status_agent = autogen.AssistantAgent(
+    #     name="damage_defective_status_agent",
+    #     system_message="""For the customer queries related to defective product or damaged package,if use have image url in the input then proceed to the next agent otherwise check if use have given the order id. if none of both are given in input then I will ask for the order id or image url. if user enters the order id then I will retrieve the image url corresponding to that orderid from database otherwise proceed with provided image url from input""",
+    #     code_execution_config=False,
+    #     llm_config=llm_config,
+    #     function_map=function_map,
+    # )
 
     image_explainer = MultimodalConversableAgent(
         name="image-explainer",
         max_consecutive_auto_reply=10,
         llm_config=llm_config,
-        system_message="I will use image url and set it as image_url and use <img {image_url}> to analyze and give the description of the image of product or package image using my vision capability. here image_url is the url of the image.",
+        system_message="For the customer queries related to defective product or damaged package, you have to describe and analyze the image. you have to use you vision capability to interpret the image and forward the description to the next agent.",
     )
 
     shipping_status_agent = autogen.AssistantAgent(
@@ -232,7 +232,7 @@ def main():
     groupchat = autogen.GroupChat(
         agents=[
             image_explainer,
-            damage_defective_status_agent,
+            # damage_defective_status_agent,
             admin_user_proxy_agent,
             shipping_status_agent,
         ],

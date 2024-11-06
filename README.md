@@ -2,12 +2,14 @@
 
 ### Description
 
-- Now it works with Python based Flask API. now we will run the `api.py` file to run flask app
-- you can run either main.py.
-- First create the database using "ClothShop.sql" file in PostgreSQL. I have updated the schema in the next queries so please consider that in mind before running our code, As it is working with latest schema.
-- we can also check the order status, Order stautus agent working perfectly. run `python -m agents.main --prompt "give the order status of my order with ordeid 1003"`
+- I am able to put the image url via UI and get the decision of the shipping status by analyzing that image (No DB involved)
+- For phase-2 I am using `api2.py` file to run, as integrating with previous code was having some issue.
 
-Please install below libraries in addition to previous one! - Flask~=3.0.3 - flast_cors~=4.0.1 - autogen-agentchat~=0.2
+Please install below libraries in addition to previous one!
+
+- Flask~=3.0.3
+- flast_cors~=4.0.1
+- autogen-agentchat~=0.2
 
 ## How to Run
 
@@ -68,9 +70,14 @@ POST: /api/send_message
 
    `python -m agents.main --prompt "give me a product Pink colored shorts for Men"`
 
+## Conversation flow on UI
+
+1. what is the stutatus of my damaged package
+   ..
+2. `<img https://i.postimg.cc/wMqvrqPy/dam1.png>`
+
+3. what is the decision of this package
+
 ## Next steps
 
-1. Chat has to terminate with proper termination condition which is not there
-2. get_message api response is not proper.
-3. Agent ask for 7 details like first name, address etc.. are asked in one prompts so user have to give details in one chat only. that has to be improved
-4. agent match the exact keyword in database like for pink item i always to give prompt word "Pink" with P capitalize as it is exactly same in the database
+- integrate the fraud detection agent

@@ -117,7 +117,7 @@ def run_chat(request_json):
                 "llm": {"model": "gpt-4o-mini"},
                 "system_message": """For the customer queries related to defective product or damaged package, if user have not given the image url or order id then I will ask for the order id or image url. if user enters the order id then I will retrieve the image url corresponding to that orderid from database otherwise proceed with provided image url from input and give the image url in the format of "<img {image_url}>". here image_url is the url of the image.""",
                 "description": "This is a assistant agent for getting image url and orderid for further analysis",
-                "function_map": function_map,
+                # "function_map": function_map,
                 "human_input_mode": "NEVER",
             },
             {
@@ -126,7 +126,7 @@ def run_chat(request_json):
                 "llm": {"model": "gpt-4o-mini"},
                 "system_message": """I will use image url and set it as image_url and use <img {image_url}> to analyze and give the description of the image of product or package image using my vision capability. here image_url is the url of the image.""",
                 "description": "it analyze the image using vision capability",
-                "function_map": function_map,
+                # "function_map": function_map,
                 "human_input_mode": "NEVER",
             },
             {
@@ -137,7 +137,7 @@ def run_chat(request_json):
                 1) Refund: if product seems defective then I will provide the refund to the customer.
                 2) Escalate to human agent: if there is no defect observed then I will escalate to human agent for further assistance.""",
                 "description": " it gives the decision based on the image description",
-                "function_map": function_map,
+                # "function_map": function_map,
                 "human_input_mode": "NEVER",
             },
             {
@@ -149,7 +149,7 @@ def run_chat(request_json):
                 2) Replace: if package is wet then I will replace the package
                 3) Escalate to human agent: if there is no defect or damage then I will escalate to human agent for further assistance.""",
                 "description": " it gives the decision based on the image description",
-                "function_map": function_map,
+                # "function_map": function_map,
                 "human_input_mode": "NEVER",
             },
         ]
@@ -269,7 +269,7 @@ def create_groupchat(agents_info, task_info, user_proxy):
             llm_config=llm_config,
             system_message=agent_info["system_message"],
             description=agent_info["description"],
-            function_map=agent_info["function_map"],
+            # function_map=agent_info["function_map"],
             human_input_mode=agent_info["human_input_mode"],
         )
 
