@@ -4,6 +4,7 @@
 
 - I am able to put the image url via UI and get the decision of the shipping status by analyzing that image (No DB involved)
 - For phase-2 I am using `api2.py` file to run, as integrating with previous code was having some issue.
+- Run `python -m agents.api2`
 
 Please install below libraries in addition to previous one!
 
@@ -68,7 +69,7 @@ POST: /api/send_message
 
 6. run using below command - For command line output
 
-   `python -m agents.main --prompt "give me a product Pink colored shorts for Men"`
+   `python -m agents.api2 --prompt "give me a product Pink colored shorts for Men"`
 
 ## Conversation flow on UI
 
