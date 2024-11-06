@@ -5,7 +5,7 @@ import autogen
 import datetime
 from agents.modules.db import PostgresManager
 from agents.modules import llm
-
+from typing import Annotated, Literal
 import json
 import random
 import time
@@ -17,7 +17,13 @@ from PIL import Image
 from termcolor import colored
 import io
 import requests
-from autogen import Agent, AssistantAgent, ConversableAgent, UserProxyAgent
+from autogen import (
+    Agent,
+    AssistantAgent,
+    ConversableAgent,
+    UserProxyAgent,
+    register_function,
+)
 from autogen.agentchat.contrib.capabilities.vision_capability import VisionCapability
 from autogen.agentchat.contrib.img_utils import get_pil_image, pil_to_data_uri
 from autogen.agentchat.contrib.multimodal_conversable_agent import (
@@ -176,6 +182,9 @@ def main():
         if response.lower() in ["no", "no thanks", "thank you"]:
             return terminate_message()
 
+    # def process_image_url(image_url: str):
+    #     return f'this is the image to analyze using vision capability <img {image_url}">'
+
     # Proxy agent handling the user's main request and interaction
     admin_user_proxy_agent = autogen.UserProxyAgent(
         name="User_Proxy_Agent",
@@ -188,7 +197,7 @@ def main():
 
     damage_defective_status_agent = autogen.AssistantAgent(
         name="damage_defective_status_agent",
-        system_message="""For the customer queries related to defective product or damaged package, if user have not given the image url or order id then I will ask for the order id or image url. if user enters the order id then I will retrieve the image url corresponding to that orderid from database otherwise proceed with provided image url from input""",
+        system_message="""For the customer queries related to defective product or damaged package,if use have image url in the input then proceed to the next agent otherwise check if use have given the order id. if none of both are given in input then I will ask for the order id or image url. if user enters the order id then I will retrieve the image url corresponding to that orderid from database otherwise proceed with provided image url from input""",
         code_execution_config=False,
         llm_config=llm_config,
         function_map=function_map,
@@ -211,6 +220,14 @@ def main():
         3) Escalate to human agent: if there is no defect or damage then I will escalate to human agent for further assistance.
         """,
     )
+
+    # autogen.agentchat.register_function(
+    #     process_image_url,
+    #     caller=image_explainer,
+    #     executor=damage_defective_status_agent,
+    #     name="process_image_url",
+    #     description="function to process image url and set it as image_url and use <img {image_url}> to analyze and give the description of the image of product or package image using my vision capability.",
+    # )
 
     groupchat = autogen.GroupChat(
         agents=[

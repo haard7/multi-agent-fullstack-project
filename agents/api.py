@@ -47,6 +47,9 @@ user_queue = queue.Queue()  # stores user inputs
 
 chat_status = "ended"
 
+db = PostgresManager()
+db.connect_with_url(DATABASE_URL)
+
 
 # Define the ConversableAgent to handle user input asynchronously
 class MyConversableAgent(autogen.ConversableAgent):
@@ -98,32 +101,24 @@ async def initiate_chat(agent, recipient, message):
 # Define function to initialize agents and initiate chat
 def run_chat(request_json):
     global chat_status
+
+    function_map = {
+        # "recommend_product": db.recommend_product,
+        # "buy_product": db.buy_product,
+        # "get_order_status": db.get_order_status,
+        "run_sql": db.run_sql
+    }
     try:
         user_input = request_json.get("message")
         agent_info = [
-            # {
-            #     "name": "product_recommendation_agent",
-            #     "type": "AssistantAgent",
-            #     "llm": {"model": "gpt-4o-mini"},
-            #     "system_message": """I recommend products based on customer preferences. After recommendation, I will ask if the customer wants to purchase the product before saving the customer and order details. I will make sure about below details before I take any action
-            #     - if customer give the product name like shirt, shorts etc.. then I will use keyword search in product name to find the relevant data.
-            #     - if the customer ask for product of specific size like large, small or medium then I will search for first letter of that in capital letter in size column.
-            #     """,
-            #     "description": "This is a assistant agent who can recommend products based on customer preferences. Also perform purchsing if user wants to buy that product",
-            # },
-            # {
-            #     "name": "order_status_agent",
-            #     "type": "AssistantAgent",
-            #     "llm": {"model": "gpt-4o-mini"},
-            #     "system_message": "I retrieve order details based on the order ID provided by the customer. Return the response in proper format by summarizing the data",
-            #     "description": "This is a assistant agent who can retrieve order details based on the order ID provided by the customer. if not provided then ask for it",
-            # },
             {
                 "name": "damage_defective_status_agent",
                 "type": "AssistantAgent",
                 "llm": {"model": "gpt-4o-mini"},
-                "system_message": """For the customer queries related to defective product or damaged package, if user have not given the image url or order id then I will ask for the order id or image url. if user enters the order id then I will retrieve the image url corresponding to that orderid from database otherwise proceed with provided image url from input""",
+                "system_message": """For the customer queries related to defective product or damaged package, if user have not given the image url or order id then I will ask for the order id or image url. if user enters the order id then I will retrieve the image url corresponding to that orderid from database otherwise proceed with provided image url from input and give the image url in the format of "<img {image_url}>". here image_url is the url of the image.""",
                 "description": "This is a assistant agent for getting image url and orderid for further analysis",
+                "function_map": function_map,
+                "human_input_mode": "NEVER",
             },
             {
                 "name": "image_explainer",
@@ -131,16 +126,31 @@ def run_chat(request_json):
                 "llm": {"model": "gpt-4o-mini"},
                 "system_message": """I will use image url and set it as image_url and use <img {image_url}> to analyze and give the description of the image of product or package image using my vision capability. here image_url is the url of the image.""",
                 "description": "it analyze the image using vision capability",
+                "function_map": function_map,
+                "human_input_mode": "NEVER",
             },
             {
-                "name": "shipping_status_agent",
+                "name": "package_shipping_status_agent",
                 "type": "AssistantAgent",
                 "llm": {"model": "gpt-4o-mini"},
-                "system_message": """I will use the description of the image from image_explainer agent and give the final one decision out of below with respective description as well as the image url.
-                1) Refund: if product or package seems defective of damaged then I will provide the refund to the customer.
+                "system_message": """if the image is of product then I will use the description of the image from image_explainer agent and give the final one decision out of below with respective description as well as the image url.
+                1) Refund: if product seems defective then I will provide the refund to the customer.
+                2) Escalate to human agent: if there is no defect observed then I will escalate to human agent for further assistance.""",
+                "description": " it gives the decision based on the image description",
+                "function_map": function_map,
+                "human_input_mode": "NEVER",
+            },
+            {
+                "name": "product_shipping_status_agent",
+                "type": "AssistantAgent",
+                "llm": {"model": "gpt-4o-mini"},
+                "system_message": """if the image is of package then I will use the description of the image from image_explainer agent and give the final one decision out of below with respective description as well as the image url.
+                1) Refund: if package seems seriously damaged then I will provide the refund to the customer.
                 2) Replace: if package is wet then I will replace the package
                 3) Escalate to human agent: if there is no defect or damage then I will escalate to human agent for further assistance.""",
                 "description": " it gives the decision based on the image description",
+                "function_map": function_map,
+                "human_input_mode": "NEVER",
             },
         ]
         task_info = {
@@ -152,8 +162,8 @@ def run_chat(request_json):
         }
 
         # Setup DB manager and connect
-        db = PostgresManager()
-        db.connect_with_url(DATABASE_URL)
+        # db = PostgresManager()
+        # db.connect_with_url(DATABASE_URL)
 
         table_definitions = db.get_table_definitions_for_prompt()
 
@@ -191,10 +201,11 @@ def create_userproxy():
     }
     user_proxy = MyConversableAgent(
         name="User_Proxy",
+        system_message="You are the admin overseeing the chat. continue interacting with the respective agent until request is fulfilled.",
         code_execution_config=False,
         is_termination_msg=lambda msg: "TERMINATE" in msg["content"],
         human_input_mode="ALWAYS",
-        function_map=function_map,
+        # function_map=function_map,
     )
     user_proxy.register_reply(
         [autogen.Agent, None],
@@ -229,94 +240,6 @@ def create_groupchat(agents_info, task_info, user_proxy):
             "seed": 44,
             # "request_timeout": 120,
             "functions": [
-                # {
-                #     "name": "recommend_product",
-                #     "description": "Retrieves product recommendations based on the user's preferences by running SQL query against the postgres database",
-                #     "parameters": {
-                #         "type": "object",
-                #         "properties": {
-                #             "sql": {
-                #                 "type": "string",
-                #                 "description": "The SQL query to run",
-                #             }
-                #         },
-                #         "required": ["sql"],
-                #     },
-                # },
-                # {
-                #     "name": "buy_product",
-                #     "description": "Saves customer and order details when a product is purchased by running SQL query against the postgres database",
-                #     "parameters": {
-                #         "type": "object",
-                #         "properties": {
-                #             "firstname": {
-                #                 "type": "string",
-                #                 "description": "First Name of the customer",
-                #             },
-                #             "lastname": {
-                #                 "type": "string",
-                #                 "description": "Last Name of the customer",
-                #             },
-                #             "email": {
-                #                 "type": "string",
-                #                 "description": "Email of the customer",
-                #             },
-                #             "phonenumber": {
-                #                 "type": "string",
-                #                 "description": "Phone Number of the customer",
-                #             },
-                #             "shippingaddress": {
-                #                 "type": "string",
-                #                 "description": "Shipping Address of the customer",
-                #             },
-                #             "creditcardnumber": {
-                #                 "type": "string",
-                #                 "description": "Credit Card Number of the customer",
-                #             },
-                #             "productid": {
-                #                 "type": "integer",
-                #                 "description": "The ID of the product being purchased",
-                #             },
-                #             "quantity": {
-                #                 "type": "integer",
-                #                 "description": "Quantity of the product",
-                #             },
-                #         },
-                #         "required": [
-                #             "firstname",
-                #             "lastname",
-                #             "email",
-                #             "phonenumber",
-                #             "shippingaddress",
-                #             "creditcardnumber",
-                #             "productid",
-                #             "quantity",
-                #         ],
-                #     },
-                # },
-                # {
-                #     "name": "get_order_status",
-                #     "description": "Retrieves order status based on orderid",
-                #     "parameters": {
-                #         "type": "object",
-                #         "properties": {
-                #             "order_id": {
-                #                 "type": "integer",
-                #                 "description": "The ID of the order to retrieve status for",
-                #             }
-                #         },
-                #         "required": ["order_id"],
-                #     },
-                # },
-                # {
-                #     "name": "product_recommendation_flow",
-                #     "description": "Handles the flow for purchasing the product if user wants to buy the recommended product",
-                #     "parameters": {
-                #         "type": "object",
-                #         "properties": {},
-                #         "required": [],
-                #     },
-                # },
                 {
                     "name": "run_sql",
                     "description": "Using orderid, it use the table 'Product_defect' or 'Package_damaged' based on the whether the request is related to defective product or damaged package respectively. Then it return the image url corresponding to that orderid",
@@ -340,20 +263,14 @@ def create_groupchat(agents_info, task_info, user_proxy):
             "seed": 44,
         }
 
-        function_map = {
-            "recommend_product": db.recommend_product,
-            "buy_product": db.buy_product,
-            "get_order_status": db.get_order_status,
-            # "product_recommendation_flow": product_recommendation_flow,
-        }
-
         AgentClass = agent_classes[agent_info["type"]]
         assistant = AgentClass(
             name=agent_info["name"],
             llm_config=llm_config,
             system_message=agent_info["system_message"],
             description=agent_info["description"],
-            function_map=function_map,
+            function_map=agent_info["function_map"],
+            human_input_mode=agent_info["human_input_mode"],
         )
 
         assistant.register_reply(
