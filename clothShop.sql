@@ -35,7 +35,7 @@ VALUES
         7,
         'Black and grey printed medium trolley bag, secured with a TSA lock. One handle on the top and one on the side, has a trolley with a retractable handle on the top and four corner mounted inline skate wheels. One main zip compartment, zip lining, two compression straps with click clasps, one zip compartment on the flap with three zip pockets. Warranty: 5 years. Warranty provided by Brand Owner / Manufacturer',
         'Black',
-        'https://i.imgur.com/VTklGP8.png'
+        'https://i.postimg.cc/w3JxyV7X/10017413.png'
     ),
     (
         10016283,
@@ -47,7 +47,7 @@ VALUES
         7,
         'Beige & Grey made to measure kurta with churidar and dupatta. Beige made to measure calf length kurta, has a V-neck, three-quarter sleeves, lightly padded on bust, flared hem, concealed zip closure. Grey solid made to measure churidar, drawstring closure. Grey net sequined dupatta, has printed taping. What is Made to Measure? Customised Kurta Set according to your Bust and Length. So please refer to the Size Chart to pick your perfect size. How to measure bust? Measure under your arms and around your chest to find your bust size in inches. How to measure Kurta length? Measure from shoulder till barefoot to find kurta length',
         'Beige',
-        'https://i.imgur.com/VDzDTh7.jpeg'
+        'https://i.postimg.cc/nCGHThKM/10016283.png'
     ),
     (
         10009781,
@@ -59,7 +59,7 @@ VALUES
         7,
         'Pink coloured wash 5-pocket high-rise cropped jeans, clean look, no fade, has a button and zip closure, and waistband with belt loops',
         'Pink',
-        'https://i.imgur.com/7nQ7ofi.png'
+        'https://i.postimg.cc/JsKz7ztS/10009781.png'
     ),
     (
         10015921,
@@ -71,7 +71,7 @@ VALUES
         5,
         'Blue self-design bandhgala suit. Blue self-design bandhgala blazer, has a mandarin collar, single breasted with full button placket, long sleeves, three pockets, an attached lining and a double-vented back hem. Blue self-design mid-rise trousers, has a zip fly with a button and a hook-and-bar closure, four pockets, a waistband with belt loops',
         'Blue',
-        'https://i.imgur.com/qTNSCJm.png'
+        'https://i.postimg.cc/v1BH4wVT/10015921.png'
     ),
     (
         10017833,
@@ -83,7 +83,7 @@ VALUES
         5,
         'Brown and off-white printed casual shirt, has a spread collar, long sleeves, button placket, curved hem, one patch pocket',
         'Brown',
-        'https://i.imgur.com/rJgzr4F.jpeg'
+        'https://i.postimg.cc/w1W984Gp/10017833.png'
     ),
     (
         10014361,
@@ -95,7 +95,7 @@ VALUES
         5,
         'Brown solid low-rise regular shorts, has four pockets, a button closure',
         'Brown',
-        'https://i.imgur.com/XqIy8vE.png'
+        'https://i.postimg.cc/9w3Wg4Nw/10014361.png'
     ),
     (
         10017900,
@@ -107,7 +107,7 @@ VALUES
         5,
         'Black solid low-rise regular shorts, has four pockets, a button closure',
         'Black',
-        'https://i.imgur.com/Uf3MmBg.png'
+        'https://i.postimg.cc/hX4KYRMs/10017900.png'
     ),
     (
         10017901,
@@ -119,7 +119,7 @@ VALUES
         5,
         'Pink regular shorts, has four pockets, a button closure',
         'Pink',
-        'https://i.imgur.com/syvRx9w.png'
+        'https://i.postimg.cc/vxWGJQpq/10017901.png'
     );
 
 SELECT
@@ -187,49 +187,71 @@ FROM
     Orders;
 
 -- updated with new Table: product_returns
-
 CREATE TABLE Product_defect (
     orderid INT PRIMARY KEY,
     defect_product_img VARCHAR(255) NOT NULL
 );
 
-INSERT INTO Product_defect (orderid, defect_product_img)
-VALUES 
-    (11, 'https://i.postimg.cc/zXpW8MFY/dm1.png '),
-    (12, 'https://i.postimg.cc/520z03sY/dm2.png'),
-    (13, 'https://i.postimg.cc/8zjFDCCL/dm3.png');
+INSERT INTO
+    Product_defect (orderid, defect_product_img)
+VALUES
+    (11, 'https://i.postimg.cc/XYchJ2wk/mY5e7mx.png'),
+    (12, 'https://i.postimg.cc/1gNBs5QP/syvRx9w.png'),
+    (13, 'https://i.postimg.cc/Wt7n2HQD/9GgyJE5.png');
 
-	
 CREATE TABLE Package_damaged (
     orderid INT PRIMARY KEY,
     damaged_package_img VARCHAR(255) NOT NULL
 );
 
-INSERT INTO Package_damaged (orderid, damaged_package_img)
-VALUES 
-    (5, 'https://i.postimg.cc/wMqvrqPy/dam1.png'),
-    (8, 'https://i.postimg.cc/xTd8ydMB/dam2.png'),
-    (9, 'https://i.postimg.cc/Bv2nQPfP/dam3.png');
-
+INSERT INTO
+    Package_damaged (orderid, damaged_package_img)
+VALUES
+    (5, 'https://i.postimg.cc/wT34HqvH/DNQTxC0.png'),
+    (8, 'https://i.postimg.cc/J4mJcKfF/ElLuHVN.png'),
+    (9, 'https://i.postimg.cc/4xyYB0BW/DNQTxC0.png');
 
 CREATE TABLE Fraud_transaction (
-	orderid INT PRIMARY KEY,
-	fraud_transaction_img VARCHAR(255) NOT NULL
-   -- we are not having the charged_price attribute here as we will cross check the recognized price with what in database on the fly
+    orderid INT PRIMARY KEY,
+    fraud_transaction_img VARCHAR(255) NOT NULL -- we are not having the charged_price attribute here as we will cross check the recognized price with what in database on the fly
 );
 
+INSERT INTO
+    Fraud_transaction (orderid, fraud_transaction_img)
+VALUES
+    (10, 'https://i.postimg.cc/d0DSQJnG/CsDjUVs.png'),
+    (12, 'https://i.postimg.cc/T1QrWD31/YUieKTf.png');
 
-INSERT INTO Fraud_transaction (orderid, fraud_transaction_img)
-VALUES 
-	(10, 'https://i.postimg.cc/VshQps2x/ft1.png'),
-    (12,'https://i.postimg.cc/3x5MrS89/ft2.png');
+select
+    *
+from
+    customers;
 
+delete from
+    customers
+where
+    customerid = 1
+select
+    *
+from
+    orders;
 
-select * from customers;
-delete from customers where customerid=1
-select * from orders;
-select * from products;
-select * from Product_defect;
-select * from Package_damaged;
-select * from Fraud_transaction;
+select
+    *
+from
+    products;
 
+select
+    *
+from
+    Product_defect;
+
+select
+    *
+from
+    Package_damaged;
+
+select
+    *
+from
+    Fraud_transaction;
