@@ -29,14 +29,17 @@ from autogen.code_utils import content_str
 
 dotenv.load_dotenv()
 
-# DATABASE_URL = os.environ.get("DATABASE_URL")
+DATABASE_URL = os.environ.get("DATABASE_URL")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
-# POSTGRES_TABLE_DEFINITIONS_CAP_REF = "TABLE_DEFINITIONS"
-# RESPONSE_FORMAT_CAP_REF = "RESPONSE_FORMAT"
+POSTGRES_TABLE_DEFINITIONS_CAP_REF = "TABLE_DEFINITIONS"
+RESPONSE_FORMAT_CAP_REF = "RESPONSE_FORMAT"
 
-# SQL_DELIMITER = "---------"
+SQL_DELIMITER = "---------"
 
+
+db = PostgresManager()
+db.connect_with_url(DATABASE_URL)
 app = Flask(__name__)
 cors = CORS(app)
 
@@ -128,6 +131,33 @@ def run_chat(request_json):
                 "system_message": "for any request related to condition, status or description of damaged package or defective product then I will give the detailed description. if image is not provided then I will ask for image or orderid and then I will give the detailed description of the image. if image is is not of package or any product then I will reply with that along with the image url and description that it is out of scope",
                 "description": "for any request related to condition, status or description of image then I will give the detailed description of tha image",
             },
+            {
+                "name": "OCRExtractionAgent",
+                "type": "MultimodalConversableAgent",
+                "llm": {"model": "gpt-4o-mini"},
+                "system_message": "Extracts order details (e.g., Order ID, Quantity, Price, and Billed Price) from OCR image and provide the extracted details to the user in proper markdown",
+                "description": "Extracts order details (e.g., Order ID, Quantity, Price, and Billed Price) from OCR image.",
+            },
+            {
+                "name": "db_retrieval_agent",
+                "type": "AssistantAgent",
+                "llm": {"model": "gpt-4o-mini"},
+                "system_message": "Retrieve the total price from the database for a given order ID.",
+                "description": "Retrieve the total price from the database for a given order ID.",
+                "function_map": {"get_totalprice_from_db": db.get_totalprice},
+            },
+            {
+                "name": "order_verification_agent",
+                "type": "AssistantAgent",
+                "llm": {"model": "gpt-4o-mini"},
+                "system_message": """   "Verify the order details extracted from OCR by retrieving the total price from the database for the given order ID. "
+                "Then, compare it with the billed price provided from the OCR data, and classify the order as follows:\n\n"
+                "- Refund: Refund if the billed price does not match the total price in the database.\n"
+                "- Decline: Decline if the billed price matches the total price in the database.\n"
+                "- Escalate: Escalate if the order ID is not found in the database.\n\n"
+                "Provide a clear justification with your final classification.""",
+                "description": "verify the order details extracted from OCR with the one fetched from database to take the appropriate decision for fraudulent transaction.",
+            },
         ]
 
         # image_explainer:  for any request related to condition, status or description of damaged then I will give the detailed description of the image. if image is not provided then I will ask for image or orderid"
@@ -135,7 +165,7 @@ def run_chat(request_json):
             "id": 0,
             "name": "Personal Assistant",
             "description": "This is a powerful personal assistant.",
-            "maxMessages": 50,
+            "maxMessages": 60,
             "speakSelMode": "auto",
         }
 
@@ -149,12 +179,12 @@ def run_chat(request_json):
         prompt = f"Fulfill this request: {user_input}. "
         # prompt = llm.add_cap_ref(
         #     prompt,
-        #     f"Use these {POSTGRES_TABLE_DEFINITIONS_CAP_REF} to satisfy the database query related to cloth retail.",
+        #     f"Use these {POSTGRES_TABLE_DEFINITIONS_CAP_REF} to satisfy the database query wherever it is required to create",
         #     POSTGRES_TABLE_DEFINITIONS_CAP_REF,
         #     table_definitions,
         # )
 
-        # print("prompt: ", prompt)
+        print("prompt: ", prompt)
         userproxy = create_userproxy()
 
         manager, assistants = create_groupchat(agent_info, task_info, userproxy)
@@ -178,7 +208,20 @@ def create_userproxy():
     # }
     user_proxy = MyConversableAgent(
         name="User_Proxy",
-        system_message="You are the admin overseeing the chat. continue interacting with the respective agent until request is fulfilled. if you have the description of the image from 'image_explainer' agent then forward it to particular agent for further analysis. if it is related to product defect then go to 'product_shipping_status_agent' and if it is related to package damage then go to 'package_shipping_status_agent' agent. if you have the final decision then provide it to the user.",
+        system_message="""You are the admin overseeing the chat. continue interacting with the respective agent until request is fulfilled. if request is related to condition or status of damaged package or defective product then follow requirements mentioned under TASK1. if the request is related to fraudulent transaction then follow requirements mentioned under TASK2.
+
+        TASK1
+        1) if you have the description of the image from 'image_explainer' agent then forward it to particular agent for further analysis.
+        2) if description from image_explainer is related to product defect then go to 'product_shipping_status_agent'
+        3) if description is from image_explainer is related to package damage then go to 'package_shipping_status_agent' agent.
+
+        TASK2
+        "1. **OCR Extraction**: First, direct the OCR Extraction Agent to analyze the provided image and extract key details, such as the Order ID and Billed Price.\n"
+        "2. **Database Retrieval**: Once the Order ID is extracted, instruct the Database Retrieval Agent to fetch the Total Price associated with this Order ID from the database.\n"
+        "3. **Order Verification**: After obtaining both the Billed Price from the OCR Extraction Agent and the Total Price from the Database Retrieval Agent, engage the Order Verification Agent to classify the order.\n\n"
+        "Ensure each step is completed in sequence, and facilitate the workflow by gathering and passing along relevant details between agents.
+
+        if you have the final decision then provide it to the user.""",
         code_execution_config=False,
         is_termination_msg=lambda msg: "TERMINATE" in msg["content"],
         human_input_mode="ALWAYS",
@@ -215,96 +258,22 @@ def create_groupchat(agents_info, task_info, user_proxy):
             "temperature": 0,
             "seed": 44,
             # "request_timeout": 120,
-            # "functions": [
-            #     {
-            #         "name": "recommend_product",
-            #         "description": "Retrieves product recommendations based on the user's preferences by running SQL query against the postgres database",
-            #         "parameters": {
-            #             "type": "object",
-            #             "properties": {
-            #                 "sql": {
-            #                     "type": "string",
-            #                     "description": "The SQL query to run",
-            #                 }
-            #             },
-            #             "required": ["sql"],
-            #         },
-            #     },
-            #     {
-            #         "name": "buy_product",
-            #         "description": "Saves customer and order details when a product is purchased by running SQL query against the postgres database",
-            #         "parameters": {
-            #             "type": "object",
-            #             "properties": {
-            #                 "firstname": {
-            #                     "type": "string",
-            #                     "description": "First Name of the customer",
-            #                 },
-            #                 "lastname": {
-            #                     "type": "string",
-            #                     "description": "Last Name of the customer",
-            #                 },
-            #                 "email": {
-            #                     "type": "string",
-            #                     "description": "Email of the customer",
-            #                 },
-            #                 "phonenumber": {
-            #                     "type": "string",
-            #                     "description": "Phone Number of the customer",
-            #                 },
-            #                 "shippingaddress": {
-            #                     "type": "string",
-            #                     "description": "Shipping Address of the customer",
-            #                 },
-            #                 "creditcardnumber": {
-            #                     "type": "string",
-            #                     "description": "Credit Card Number of the customer",
-            #                 },
-            #                 "productid": {
-            #                     "type": "integer",
-            #                     "description": "The ID of the product being purchased",
-            #                 },
-            #                 "quantity": {
-            #                     "type": "integer",
-            #                     "description": "Quantity of the product",
-            #                 },
-            #             },
-            #             "required": [
-            #                 "firstname",
-            #                 "lastname",
-            #                 "email",
-            #                 "phonenumber",
-            #                 "shippingaddress",
-            #                 "creditcardnumber",
-            #                 "productid",
-            #                 "quantity",
-            #             ],
-            #         },
-            #     },
-            #     {
-            #         "name": "get_order_status",
-            #         "description": "Retrieves order status based on orderid",
-            #         "parameters": {
-            #             "type": "object",
-            #             "properties": {
-            #                 "order_id": {
-            #                     "type": "integer",
-            #                     "description": "The ID of the order to retrieve status for",
-            #                 }
-            #             },
-            #             "required": ["order_id"],
-            #         },
-            #     },
-            #     # {
-            #     #     "name": "product_recommendation_flow",
-            #     #     "description": "Handles the flow for purchasing the product if user wants to buy the recommended product",
-            #     #     "parameters": {
-            #     #         "type": "object",
-            #     #         "properties": {},
-            #     #         "required": [],
-            #     #     },
-            #     # }
-            # ],
+            "functions": [
+                {
+                    "name": "get_totalprice_from_db",
+                    "description": "Retrieves totalprice for a particular orderid",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "order_id": {
+                                "type": "integer",
+                                "description": "The ID of the order to retrieve totalprice for",
+                            }
+                        },
+                        "required": ["order_id"],
+                    },
+                }
+            ],
         }
 
         llm_config_manager = {
@@ -321,13 +290,24 @@ def create_groupchat(agents_info, task_info, user_proxy):
         # }
 
         AgentClass = agent_classes[agent_info["type"]]
-        assistant = AgentClass(
-            name=agent_info["name"],
-            llm_config=llm_config,
-            system_message=agent_info["system_message"],
-            description=agent_info["description"],
-            # function_map=function_map,
-        )
+
+        if agent_info["name"] == "db_retrieval_agent":
+            assistant = AgentClass(
+                name=agent_info["name"],
+                llm_config=llm_config,
+                system_message=agent_info["system_message"],
+                description=agent_info["description"],
+                function_map=agent_info.get(
+                    "function_map"
+                ),  # Adds function_map only if it's defined
+            )
+        else:
+            assistant = AgentClass(
+                name=agent_info["name"],
+                llm_config=llm_config,
+                system_message=agent_info["system_message"],
+                description=agent_info["description"],
+            )
 
         assistant.register_reply(
             [autogen.Agent, None],

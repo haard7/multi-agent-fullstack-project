@@ -291,6 +291,26 @@ class PostgresManager:
         except Exception as e:
             raise e
 
+    def get_totalprice(self, order_id):
+        """
+        Retrieves the total price for a given order ID.
+        """
+        try:
+            # Execute SQL query to retrieve totalprice for the specified order_id
+            self.cur.execute(
+                "SELECT totalprice FROM orders WHERE orderid = %s",
+                (order_id,),
+            )
+            total_price = self.cur.fetchone()
+
+            # Check if the result exists and return it, otherwise return "Order not found"
+            if total_price:
+                return total_price[0]  # Access the first element of the result tuple
+            else:
+                return "Order not found"
+        except Exception as e:
+            raise e
+
     # Helper function to generate unique order ID (custom logic can be implemented)
     def _generate_order_id(self):
         self.cur.execute("SELECT MAX(orderid) FROM orders")
