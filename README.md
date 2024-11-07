@@ -12,6 +12,14 @@ Please install below libraries in addition to previous one!
 - flast_cors~=4.0.1
 - autogen-agentchat~=0.2
 
+## Conversation flow on UI
+
+1. what is the stutatus of my damaged package
+   ..
+2. `<img https://i.postimg.cc/wMqvrqPy/dam1.png>`
+
+3. what is the decision of this package
+
 ## How to Run
 
 1. clone the repo including this branch
@@ -70,14 +78,6 @@ POST: /api/send_message
 6. run using below command - For command line output
 
    `python -m agents.api2 --prompt "give me a product Pink colored shorts for Men"`
-
-## Conversation flow on UI
-
-1. what is the stutatus of my damaged package
-   ..
-2. `<img https://i.postimg.cc/wMqvrqPy/dam1.png>`
-
-3. what is the decision of this package
 
 ## Next steps
 
