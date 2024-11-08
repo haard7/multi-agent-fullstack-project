@@ -139,7 +139,7 @@ def run_chat(request_json):
                 "description": "Extracts order details (e.g., Order ID, Quantity, Price, and Billed Price) from OCR image.",
             },
             {
-                "name": "db_retrieval_agent",
+                "name": "price_retrieval_agent",
                 "type": "AssistantAgent",
                 "llm": {"model": "gpt-4o-mini"},
                 "system_message": "Retrieve the total price from the database for a given order ID.",
@@ -147,7 +147,7 @@ def run_chat(request_json):
                 "function_map": {"get_totalprice_from_db": db.get_totalprice},
             },
             {
-                "name": "Fraudulen_Transactions_AI_Agent",
+                "name": "Fraudulent_Transactions_AI_Agent",
                 "type": "AssistantAgent",
                 "llm": {"model": "gpt-4o-mini"},
                 "system_message": """   "first, extract the text data having billing related informations. Then, fetch the total price from the database using the order ID extracted from the OCR data.\n\n"
