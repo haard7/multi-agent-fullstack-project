@@ -109,7 +109,7 @@ def run_chat(request_json):
                 "llm": {"model": "gpt-4o-mini"},
                 "system_message": """if the image is of package then you will use the description of the image from image_explainer agent and give the final one decision out of below along with its description as well as the image url in proper markdown format.
                 1) Refund: if package seems seriously damaged then you will provide the refund to the customer.
-                2) Replace: if package is having water exposure observed then you will replace the package
+                2) Replace: if package is having water exposure or discoloration or dirt observed then you will replace the package
                 3) Escalate to human agent: if there is no defect or damage in the package then you will escalate to human agent for further assistance.
                 """,
                 "description": "This is a assistant agent who can recommend products based on customer preferences. Also perform purchsing if user wants to buy that product",
@@ -118,7 +118,7 @@ def run_chat(request_json):
                 "name": "product_shipping_status_agent",
                 "type": "AssistantAgent",
                 "llm": {"model": "gpt-4o-mini"},
-                "system_message": """if the image is of product then you will use the description of the image from image_explainer agent and give the final one decision out of below along with its description as well as the image url in proper markdown format.
+                "system_message": """if the image is of product or cloth then you will use the description of the image from image_explainer agent and give the final one decision out of below along with its description as well as the image url in proper markdown format.
                 1) Refund: if product seems defective then you will provide the refund to the customer.
                 2) Escalate to human agent: if there is no defect observed in the product then you will escalate to human agent for further assistance.
                 """,
@@ -128,7 +128,7 @@ def run_chat(request_json):
                 "name": "image_explainer",
                 "type": "MultimodalConversableAgent",
                 "llm": {"model": "gpt-4o-mini"},
-                "system_message": "for any request related to condition, status or description of damaged package or defective product then I will give the detailed description. if image is not provided then I will ask for image or orderid and then I will give the detailed description of the image. if image is is not of package or any product then I will reply with that along with the image url and description that it is out of scope",
+                "system_message": "for any request related to condition, status or description of damaged package or defective product then I will give the detailed description. if image is not provided then I will ask for image url and then I will give the detailed description of the image. I will only proceed to other agent after I get the image and I give the description. if image is is not of package or any product then I will reply with that along with the image url and description that it is out of scope",
                 "description": "for any request related to condition, status or description of image then I will give the detailed description of tha image",
             },
             {
@@ -147,11 +147,11 @@ def run_chat(request_json):
                 "function_map": {"get_totalprice_from_db": db.get_totalprice},
             },
             {
-                "name": "order_verification_agent",
+                "name": "Fraudulen_Transactions_AI_Agent",
                 "type": "AssistantAgent",
                 "llm": {"model": "gpt-4o-mini"},
-                "system_message": """   "Verify the order details extracted from OCR by retrieving the total price from the database for the given order ID. "
-                "Then, compare it with the billed price provided from the OCR data, and classify the order as follows:\n\n"
+                "system_message": """   "first, extract the text data having billing related informations. Then, fetch the total price from the database using the order ID extracted from the OCR data.\n\n"
+                "Then, compare price you fetched from database with the billed price provided from the OCR data, and classify the order as follows:\n\n"
                 "- Refund: Refund if the billed price does not match the total price in the database.\n"
                 "- Decline: Decline if the billed price matches the total price in the database.\n"
                 "- Escalate: Escalate if the order ID is not found in the database.\n\n"
@@ -207,7 +207,7 @@ def create_userproxy():
     #     "get_order_status": db.get_order_status,
     # }
     user_proxy = MyConversableAgent(
-        name="User_Proxy",
+        name="Operator_Agent",
         system_message="""You are the admin overseeing the chat. continue interacting with the respective agent until request is fulfilled. if request is related to condition or status of damaged package or defective product then follow requirements mentioned under TASK1. if the request is related to fraudulent transaction then follow requirements mentioned under TASK2.
 
         TASK1

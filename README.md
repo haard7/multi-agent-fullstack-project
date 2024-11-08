@@ -4,7 +4,7 @@
 
 - I am able to put the image url via UI and get the decision of the shipping status by analyzing that image of defective product. (No DB involved)
 - It also performs the fraud detection and take decision by analysing the OCR (to match the orderid it uses the DB)
-- For phase-2 I am using `api2.py` file to run, as integrating with previous code was having some issue.
+- For phase-2 I am using `api2.py` file to run, as integrating with previous code was having some issue. for phase-2 agents use the `api1.py` file
 - Run `python -m agents.api2`
 
 Please install below libraries in addition to previous one!
