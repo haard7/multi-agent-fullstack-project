@@ -291,7 +291,7 @@ def create_groupchat(agents_info, task_info, user_proxy):
 
         AgentClass = agent_classes[agent_info["type"]]
 
-        if agent_info["name"] == "db_retrieval_agent":
+        if agent_info["name"] == "price_retrieval_agent":
             assistant = AgentClass(
                 name=agent_info["name"],
                 llm_config=llm_config,
