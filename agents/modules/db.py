@@ -119,6 +119,38 @@ class PostgresManager:
         json_result = json.dumps(list_of_dicts, indent=4, default=self.datetime_handler)
         return json_result
 
+    def fetch_damaged_package_url(self, order_id):
+        try:
+            self.cur.execute(
+                "SELECT damaged_package_img FROM Package_damaged WHERE orderid = %s",
+                (order_id,),
+            )
+            result = self.cur.fetchone()
+            if result:
+                damaged_package_url = result[0]
+                # return f"<img {damaged_package_url}>"
+                return damaged_package_url
+            else:
+                return "Damaged package not found"
+        except Exception as e:
+            raise e
+
+    def fetch_defect_product_url(self, order_id):
+        try:
+            self.cur.execute(
+                "SELECT defect_product_img FROM Product_defect WHERE orderid = %s",
+                (order_id,),
+            )
+            result = self.cur.fetchone()
+            if result:
+                defect_product_url = result[0]
+                # return f"<img {defect_product_url}>"
+                return defect_product_url
+            else:
+                return "Defective product not found"
+        except Exception as e:
+            raise e
+
     def buy_product(
         self,
         firstname,
@@ -254,6 +286,26 @@ class PostgresManager:
             order_status = self.cur.fetchone()
             if order_status:
                 return order_status
+            else:
+                return "Order not found"
+        except Exception as e:
+            raise e
+
+    def get_totalprice(self, order_id):
+        """
+        Retrieves the total price for a given order ID.
+        """
+        try:
+            # Execute SQL query to retrieve totalprice for the specified order_id
+            self.cur.execute(
+                "SELECT totalprice FROM orders WHERE orderid = %s",
+                (order_id,),
+            )
+            total_price = self.cur.fetchone()
+
+            # Check if the result exists and return it, otherwise return "Order not found"
+            if total_price:
+                return total_price[0]  # Access the first element of the result tuple
             else:
                 return "Order not found"
         except Exception as e:
